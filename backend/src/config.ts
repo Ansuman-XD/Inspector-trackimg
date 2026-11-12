@@ -11,7 +11,7 @@ export const config = {
     accessExpiresIn: "15m",
     refreshExpiresInDays: 7,
   },
-  corsOrigins: (process.env.CORS_ORIGINS || "http://localhost:5173,http://localhost:3000")
+  corsOrigins: (process.env.CORS_ORIGINS || "http://localhost:5173,http://localhost:3000,https://inspector-trackimg2.vercel.app")
     .split(",")
     .map((o) => o.trim()),
   internalCleanupSecret: process.env.INTERNAL_CLEANUP_SECRET || "dev_cleanup_secret",
