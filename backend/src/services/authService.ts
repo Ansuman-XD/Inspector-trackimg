@@ -1,0 +1,170 @@
+import crypto from "crypto";
+import { employeeRepository, type EmployeeRecord } from "../repositories/employeeRepository.js";
+import { hashPassword, verifyPassword, hashToken } from "../lib/crypto.js";
+import {
+  generateAccessToken,
+  generateRefreshToken,
+  verifyRefreshToken,
+  type AccessTokenPayload,
+} from "../lib/jwt.js";
+import { config } from "../config.js";
+
+export interface LoginResult {
+  accessToken: string;
+  refreshToken: string;
+  user: {
+    id: string;
+    badgeId: string;
+    name: string;
+    email: string;
+    role: "admin" | "employee";
+    department: string;
+    designation: string;
+    mustChangePw: boolean;
+  };
+}
+
+export class AuthError extends Error {
+  constructor(message: string, public status: number = 400) {
+    super(message);
+    this.name = "AuthError";
+  }
+}
+
+export const authService = {
+  async login(badgeIdInput: string, passwordInput: string, requestedRole: "admin" | "employee"): Promise<LoginResult> {
+    const badgeId = badgeIdInput.trim().toUpperCase();
+
+    // Least-privilege error: do not leak whether user badge exists
+    const employee = await employeeRepository.findByBadgeId(badgeId);
+    if (!employee) {
+      throw new AuthError("Invalid User ID or password.", 401);
+    }
+
+    const passwordValid = await verifyPassword(employee.passwordHash, passwordInput);
+    if (!passwordValid) {
+      throw new AuthError("Invalid User ID or password.", 401);
+    }
+
+    // Role check
+    if (employee.role !== requestedRole) {
+      throw new AuthError(
+        `This account is not registered as ${requestedRole === "admin" ? "an Admin" : "an Employee"}.`,
+        403
+      );
+    }
+
+    // Status check for employees
+    if (employee.role === "employee" && !employee.active) {
+      throw new AuthError("Your account has been deactivated. Contact your administrator.", 403);
+    }
+
+    // Generate tokens
+    const tokenId = `RT-${crypto.randomUUID()}`;
+    const tokenPayload: AccessTokenPayload = {
+      userId: employee.id,
+      badgeId: employee.badgeId,
+      role: employee.role,
+      name: employee.name,
+    };
+
+    const accessToken = generateAccessToken(tokenPayload);
+    const refreshToken = generateRefreshToken({ userId: employee.id, tokenId });
+
+    // Store hashed refresh token in DB
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + config.jwt.refreshExpiresInDays);
+
+    await employeeRepository.createRefreshToken({
+      id: tokenId,
+      employeeId: employee.id,
+      tokenHash: hashToken(refreshToken),
+      revoked: false,
+      expiresAt,
+    });
+
+    await employeeRepository.updateLastLogin(employee.id);
+
+    return {
+      accessToken,
+      refreshToken,
+      user: {
+        id: employee.id,
+        badgeId: employee.badgeId,
+        name: employee.name,
+        email: employee.email,
+        role: employee.role,
+        department: employee.department,
+        designation: employee.designation,
+        mustChangePw: employee.mustChangePw,
+      },
+    };
+  },
+
+  async refresh(refreshTokenInput: string): Promise<{ accessToken: string; refreshToken: string }> {
+    let payload;
+    try {
+      payload = verifyRefreshToken(refreshTokenInput);
+    } catch {
+      throw new AuthError("Invalid or expired refresh token", 401);
+    }
+
+    const tokenHash = hashToken(refreshTokenInput);
+    const storedToken = await employeeRepository.findValidRefreshToken(payload.tokenId, tokenHash);
+    if (!storedToken) {
+      // Possible token reuse attempt: revoke all tokens for this user
+      await employeeRepository.revokeAllUserRefreshTokens(payload.userId);
+      throw new AuthError("Revoked or compromised refresh token", 401);
+    }
+
+    // Revoke old token (rotation)
+    await employeeRepository.revokeRefreshToken(storedToken.id);
+
+    const employee = await employeeRepository.findById(payload.userId);
+    if (!employee || !employee.active) {
+      throw new AuthError("Account inactive or deleted", 401);
+    }
+
+    // Issue new pair
+    const newTokenId = `RT-${crypto.randomUUID()}`;
+    const newAccessToken = generateAccessToken({
+      userId: employee.id,
+      badgeId: employee.badgeId,
+      role: employee.role,
+      name: employee.name,
+    });
+
+    const newRefreshToken = generateRefreshToken({ userId: employee.id, tokenId: newTokenId });
+
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + config.jwt.refreshExpiresInDays);
+
+    await employeeRepository.createRefreshToken({
+      id: newTokenId,
+      employeeId: employee.id,
+      tokenHash: hashToken(newRefreshToken),
+      revoked: false,
+      expiresAt,
+    });
+
+    return { accessToken: newAccessToken, refreshToken: newRefreshToken };
+  },
+
+  async logout(refreshTokenInput: string): Promise<void> {
+    try {
+      const payload = verifyRefreshToken(refreshTokenInput);
+      await employeeRepository.revokeRefreshToken(payload.tokenId);
+    } catch {
+      // Ignore invalid or already expired tokens on logout
+    }
+  },
+
+  async getMe(userId: string): Promise<Omit<EmployeeRecord, "passwordHash">> {
+    const employee = await employeeRepository.findById(userId);
+    if (!employee) {
+      throw new AuthError("User not found", 404);
+    }
+    const { passwordHash, ...rest } = employee;
+    return rest;
+  },
+};
