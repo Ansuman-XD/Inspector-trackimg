@@ -5,6 +5,8 @@ import { toast } from "sonner";
 import { Apple, ChevronRight, Download, MonitorSmartphone, Share as ShareIcon, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import applogoUrl from "@/assets/applogo.avif";
+
 
 export const Route = createFileRoute("/install")({
   ssr: false,
@@ -86,11 +88,7 @@ function InstallPage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-10">
       <div className="w-full max-w-sm text-center">
-        <svg viewBox="0 0 32 32" className="mx-auto h-16 w-16" aria-hidden>
-          <rect width="32" height="32" rx="7" className="fill-primary" />
-          <path d="M11 6 L8 26 M21 6 L24 26" stroke="white" strokeWidth="2.2" strokeLinecap="round" />
-          <path d="M10 11h12M9.3 16h13.4M8.6 21h14.8" stroke="white" strokeWidth="1.6" strokeLinecap="round" opacity=".85" />
-        </svg>
+       <img src={applogoUrl} alt="Inspector Tracking System" className="mx-auto h-16 w-16 rounded-xl object-contain" />
         <h1 className="mt-4 text-xl font-semibold tracking-tight">Inspector Tracking System</h1>
         <p className="mt-1 text-xs uppercase tracking-[0.14em] text-muted-foreground">Field Visit Management</p>
         <p className="mt-3 text-sm text-muted-foreground">Official Railway Field Inspection &amp; Visit Management System. Install the app, then sign in with your employee or admin account.</p>

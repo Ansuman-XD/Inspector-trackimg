@@ -4,15 +4,12 @@ import { cn } from "@/lib/utils";
 import { STATUS_META, type Tone } from "@/lib/status";
 import type { Priority, TaskStatus } from "@/types";
 import { prefs } from "@/services/storageService";
+import applogoUrl from "@/assets/applogo.avif";
 
 export function Logo({ className, light }: { className?: string; light?: boolean }) {
   return (
     <div className={cn("flex items-center gap-2.5", className)}>
-      <svg viewBox="0 0 32 32" className="h-8 w-8 shrink-0" aria-hidden>
-        <rect width="32" height="32" rx="7" className="fill-primary" />
-        <path d="M11 6 L8 26 M21 6 L24 26" stroke="white" strokeWidth="2.2" strokeLinecap="round" />
-        <path d="M10 11h12M9.3 16h13.4M8.6 21h14.8" stroke="white" strokeWidth="1.6" strokeLinecap="round" opacity=".85" />
-      </svg>
+     <img src={applogoUrl} alt="Inspector Tracking System" className="h-13 w-13 shrink-0 rounded-md object-contain" />
       <div className="leading-tight">
         <div className={cn("text-[15px] font-semibold tracking-tight", light ? "text-sidebar-accent-foreground" : "text-foreground")}>Inspector Tracking System</div>
         <div className={cn("text-[10px] uppercase tracking-[0.14em]", light ? "text-sidebar-foreground/60" : "text-muted-foreground")}>Field Visit Management</div>
