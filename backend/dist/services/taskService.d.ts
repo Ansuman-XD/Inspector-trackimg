@@ -39,4 +39,5 @@ export declare const taskService: {
         reason?: string;
     }>;
     override(taskId: string, stageType: "check_in" | "check_out", reasonInput: string, adminId: string): Promise<TaskStageRecord>;
+    setImportant(taskId: string, important: boolean, adminId: string): Promise<TaskRecord>;
 };

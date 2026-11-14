@@ -14,6 +14,7 @@ const assignSchema = z.object({
     instructions: z.string().optional(),
     allowDuplicate: z.boolean().optional(),
 });
+const importantSchema = z.object({ important: z.boolean() });
 const planSchema = z.object({
     locationId: z.string().min(1, "Select a location."),
     date: z.string().min(1, "Select a visit date."),
@@ -244,6 +245,24 @@ taskRoutes.post("/:id/stages/:type/override", requireAdmin, async (c) => {
     try {
         const stage = await taskService.override(taskId, stageType, parsed.data.reason, admin.userId);
         return c.json({ success: true, stage });
+    }
+    catch (err) {
+        if (err instanceof ServiceError)
+            return c.json({ error: err.message }, err.status);
+        return c.json({ error: "Internal server error" }, 500);
+    }
+});
+// PATCH /tasks/:id/important (Admin only)
+taskRoutes.patch("/:id/important", requireAdmin, async (c) => {
+    const admin = c.get("user");
+    const id = c.req.param("id");
+    const body = await c.req.json().catch(() => null);
+    const parsed = importantSchema.safeParse(body);
+    if (!parsed.success)
+        return c.json({ error: "Invalid input" }, 400);
+    try {
+        const task = await taskService.setImportant(id, parsed.data.important, admin.userId);
+        return c.json(task);
     }
     catch (err) {
         if (err instanceof ServiceError)
