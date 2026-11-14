@@ -43,7 +43,7 @@ function Locations() {
     <div>
       <PageHeader title="Locations" subtitle={`${db.locations.length} visit locations`} actions={
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={() => exportLocationsCsv(db, db.locations)}><Download className="mr-1.5 h-4 w-4" />Download CSV</Button>
+          <Button variant="outline" onClick={() => exportLocationsCsv(db, rows)} disabled={rows.length === 0}><Download className="mr-1.5 h-4 w-4" />Download CSV</Button>
           <Button onClick={() => setForm({ data: blank() })}><Plus className="mr-1.5 h-4 w-4" />Add Location</Button>
         </div>
       } />

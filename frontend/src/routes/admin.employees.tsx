@@ -55,7 +55,7 @@ function Employees() {
     <div>
       <PageHeader title="Employees" subtitle={`${db.employees.length} registered · ${db.employees.filter((e) => e.status === "active").length} active`} actions={
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={() => exportEmployeesCsv(db, db.employees)}><Download className="mr-1.5 h-4 w-4" />Download CSV</Button>
+          <Button variant="outline" onClick={() => exportEmployeesCsv(db, rows)} disabled={rows.length === 0}><Download className="mr-1.5 h-4 w-4" />Download CSV</Button>
           <Button onClick={() => setForm({ mode: "add", data: blank() })}><Plus className="mr-1.5 h-4 w-4" />Add Employee</Button>
         </div>
       } />

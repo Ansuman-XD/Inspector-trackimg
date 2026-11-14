@@ -24,7 +24,7 @@ export default defineConfig({
         filename: "sw.js",
         workbox: {
           navigateFallback: null,
-          globPatterns: ["**/*.{js,css,woff2,png,svg,ico}"],
+          globPatterns: ["**/*.{js,css,woff2,png,svg,ico,avif}"],
           maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
           runtimeCaching: [
             {
