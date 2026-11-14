@@ -151,6 +151,7 @@ export const tasks = pgTable(
       .notNull(),
     source: text("source", { enum: ["admin", "self"] }).notNull(), // 'admin' | 'self'
     notes: text("notes").default("").notNull(), // instructions
+    isImportant: boolean("is_important").default(false).notNull(),
     status: text("status", {
       enum: [
         "assigned",

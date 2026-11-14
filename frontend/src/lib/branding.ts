@@ -15,6 +15,7 @@ export function printFilterSummary(f: ReportFilterFlags, db: DB): string {
   if (f.employeeId) parts.push(`Employee: ${db.employees.find((e) => e.id === f.employeeId)?.name ?? f.employeeId}`);
   if (f.department) parts.push(`Department: ${f.department}`);
   if (f.locationId) parts.push(`Location: ${db.locations.find((l) => l.id === f.locationId)?.name ?? f.locationId}`);
+    if (f.important) parts.push(f.important === "important" ? "Important visits only" : "Normal visits only");
   if (f.status) parts.push(`Status: ${f.status}`);
   return parts.length ? parts.join(" · ") : "No filters applied — all records";
 }

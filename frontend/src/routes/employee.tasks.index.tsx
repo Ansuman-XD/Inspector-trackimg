@@ -52,7 +52,12 @@ function Tasks() {
         </div>
       )}
       {list.length === 0 ? <EmptyState title="Nothing here" text="No visits in this list." /> : <div className="space-y-2">{list.map((t) => <EmployeeTaskCard key={t.id} task={t} location={db.locations.find((l) => l.id === t.locationId)} />)}</div>}
-      <PlanVisitDialog employeeId={session.userId} open={planOpen} onClose={() => setPlanOpen(false)} onSaved={(id) => navigate({ to: "/employee/tasks/$id", params: { id } })} />
+      <PlanVisitDialog
+  employeeId={session.userId}
+  open={planOpen}
+  onClose={() => setPlanOpen(false)}
+  onSaved={() => navigate({ to: "/employee/dashboard" })}
+/>
     </div>
   );
 }

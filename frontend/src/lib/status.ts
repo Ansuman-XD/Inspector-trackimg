@@ -24,3 +24,6 @@ export function markerColor(s: TaskStatus) {
   return "var(--info)";
 }
 
+/** Row style for admin tables when a visit is marked important. */
+export const IMPORTANT_ROW =
+  "bg-warning/10 hover:bg-warning/20 shadow-[inset_4px_0_0_var(--warning)]";

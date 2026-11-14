@@ -8,6 +8,7 @@ import { useTaskDrawer } from "@/components/rt/drawerContext";
 import { MISSED, taskStats } from "@/services/taskService";
 import { addDaysISO, fmtDate, fmtLongDate, greeting, todayISO, fmtWindow } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { IMPORTANT_ROW } from "@/lib/status";
 
 export const Route = createFileRoute("/admin/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — Inspector Tracking System" }, { name: "description", content: "Operational overview of field visits." }, { property: "og:title", content: "Dashboard — Inspector Tracking System" }, { property: "og:description", content: "Operational overview of field visits." }] }),
@@ -143,7 +144,7 @@ function Dashboard() {
               <thead className="bg-muted/50 text-left text-xs text-muted-foreground"><tr><th className="px-4 py-2 font-medium">Time</th><th className="px-4 py-2 font-medium">Employee</th><th className="px-4 py-2 font-medium">Location</th><th className="px-4 py-2 font-medium">Status</th></tr></thead>
               <tbody>
                 {upcoming.map((t) => (
-                  <tr key={t.id} onClick={() => drawer.open(t.id)} className={cn("cursor-pointer border-t hover:bg-muted/40", MISSED.includes(t.status) && "opacity-80")}>
+                  <tr key={t.id} onClick={() => drawer.open(t.id)} className={cn("cursor-pointer border-t hover:bg-muted/40", MISSED.includes(t.status) && "opacity-80", t.important && IMPORTANT_ROW)}>
                     <td className="whitespace-nowrap px-4 py-2.5 tabular">{fmtWindow(t)}</td>
                     <td className="px-4 py-2.5">{db.employees.find((e) => e.id === t.employeeId)?.name ?? t.employeeId}</td>
                     <td className="px-4 py-2.5">{db.locations.find((l) => l.id === t.locationId)?.name}</td>

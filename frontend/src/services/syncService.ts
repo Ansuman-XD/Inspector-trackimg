@@ -1,6 +1,6 @@
 import { apiClient, tokenStorage } from "./apiClient";
 import { storage } from "./storageService";
-import type { DB, Task } from "@/types";
+import type { DB, Task, TaskStatus } from "@/types";
 import { taskDateTime } from "@/lib/format";
 import { effEnd } from "@/lib/visitRules";
 import { MISSED } from "./taskService";
@@ -91,114 +91,241 @@ export const syncService = {
           }));
         }
 
-        if (Array.isArray(tasks)) {
-          const activeBackendTasks = tasks.filter((t: any) => t.status !== "cancelled");
-          next.tasks = activeBackendTasks.map((t) => {
-            const existing = prev.tasks.find((x) => x.id === t.id);
+//         if (Array.isArray(tasks)) {
+//           const activeBackendTasks = tasks.filter((t: any) => t.status !== "cancelled");
+//           next.tasks = activeBackendTasks.map((t) => {
+//             const existing = prev.tasks.find((x) => x.id === t.id);
 
-            // Extract stages if returned by backend
-            const checkInStage = t.stages?.find((s: any) => s.type === "check_in");
-            const checkOutStage = t.stages?.find((s: any) => s.type === "check_out");
+//             // Extract stages if returned by backend
+//             const checkInStage = t.stages?.find((s: any) => s.type === "check_in");
+//             const checkOutStage = t.stages?.find((s: any) => s.type === "check_out");
 
-            // If locally in_progress or location_reached but server still has assigned, don't revert
-            let status = t.status;
-            if (
-              existing &&
-              (existing.status === "in_progress" || existing.status === "location_reached") &&
-              t.status === "assigned"
-            ) {
-              status = existing.status;
-            } else if (
-              existing &&
-              MISSED.includes(existing.status) &&
-              (t.status === "assigned" || t.status === "pending")
-            ) {
-              // Preserve missed/expired state if backend hasn't marked it expired yet
-              status = existing.status;
-            } else if (t.status === "assigned" || t.status === "pending") {
-              // Check if task window has already passed
-              const taskDate = t.date || t.scheduledDate;
-              if (taskDate) {
-                const dummyTask: Pick<Task, "startTime" | "endTime"> = {
-                  startTime: t.startTime || "",
-                  endTime: t.endTime || "",
-                };
-                const end = taskDateTime(taskDate, effEnd(dummyTask));
-                if (end < new Date()) {
-                  status = (existing?.startedAt || t.startedAt) ? "expired" : "not_visited";
-                }
-              }
-            }
+//             // If locally in_progress or location_reached but server still has assigned, don't revert
+//             let status = t.status;
+//             if (
+//               existing &&
+//               (existing.status === "in_progress" || existing.status === "location_reached") &&
+//               t.status === "assigned"
+//             ) {
+//               status = existing.status;
+//             } else if (
+//               existing &&
+//               MISSED.includes(existing.status) &&
+//               (t.status === "assigned" || t.status === "pending")
+//             ) {
+//               // Preserve missed/expired state if backend hasn't marked it expired yet
+//               status = existing.status;
+//             } else if (t.status === "assigned" || t.status === "pending") {
+//               // Check if task window has already passed
+//               const taskDate = t.date || t.scheduledDate;
+//               if (taskDate) {
+//                 const dummyTask: Pick<Task, "startTime" | "endTime"> = {
+//                   startTime: t.startTime || "",
+//                   endTime: t.endTime || "",
+//                 };
+//                 const end = taskDateTime(taskDate, effEnd(dummyTask));
+//                 if (end < new Date()) {
+//                   status = (existing?.startedAt || t.startedAt) ? "expired" : "not_visited";
+//                 }
+//               }
+//             }
 
-            return {
-              id: t.id,
-              employeeId: t.employeeId,
-              locationId: t.locationId,
-              date: t.date || t.scheduledDate,
-              startTime: t.startTime || "",
-              endTime: t.endTime || "",
-              priority: t.priority || "medium",
-              instructions: t.instructions || t.notes || "",
-              status,
-              createdAt: t.createdAt || new Date().toISOString(),
-              createdBy: t.createdBy,
-              attempts: existing?.attempts || t.attempts || [],
-              verificationStatus: t.verificationStatus || (checkInStage ? "verified" : existing?.verificationStatus || "none"),
-              verifiedAt: t.verifiedAt,
-              startedAt: existing?.startedAt || t.startedAt,
-              reachedAt: existing?.reachedAt || t.reachedAt,
-              checkIn: checkInStage
-                ? {
-                    at: checkInStage.serverTime || checkInStage.deviceTime,
-                    lat: checkInStage.lat,
-                    lng: checkInStage.lng,
-                    accuracy: checkInStage.accuracyM,
-                    distance: checkInStage.distanceM,
-                    // photo: checkInStage.photoSha256 ? `/photos/${checkInStage.id}` : undefined,
-                    photo: stagePhotoUrl(checkInStage, existing?.checkIn?.photo),
-                    override: checkInStage.overrideReason
-                      ? {
-                          reason: checkInStage.overrideReason,
-                          at: checkInStage.overrideAt,
-                          by: checkInStage.overrideBy,
-                        }
-                      : undefined,
-                  }
-                : existing?.checkIn,
-              checkOut: checkOutStage
-                ? {
-                    at: checkOutStage.serverTime || checkOutStage.deviceTime,
-                    lat: checkOutStage.lat,
-                    lng: checkOutStage.lng,
-                    accuracy: checkOutStage.accuracyM,
-                    distance: checkOutStage.distanceM,
-                    photo: stagePhotoUrl(checkOutStage, existing?.checkOut?.photo),
-                    override: checkOutStage.overrideReason
-                      ? {
-                          reason: checkOutStage.overrideReason,
-                          at: checkOutStage.overrideAt,
-                          by: checkOutStage.overrideBy,
-                        }
-                      : undefined,
-                  }
-                : existing?.checkOut,
-              employeeLatitude: existing?.employeeLatitude ?? (checkInStage ? checkInStage.lat : undefined),
-              employeeLongitude: existing?.employeeLongitude ?? (checkInStage ? checkInStage.lng : undefined),
-              gpsAccuracy: existing?.gpsAccuracy ?? (checkInStage ? checkInStage.accuracyM : undefined),
-              distanceFromLocation: existing?.distanceFromLocation ?? (checkInStage ? checkInStage.distanceM : undefined),
-              photo:
-  (checkOutStage && stagePhotoUrl(checkOutStage, existing?.checkOut?.photo)) ||
-  (checkInStage && stagePhotoUrl(checkInStage, existing?.checkIn?.photo)) ||
-  existing?.photo,
-photoTimestamp:
-  checkOutStage?.serverTime ||
-  checkOutStage?.deviceTime ||
-  checkInStage?.serverTime ||
-  checkInStage?.deviceTime ||
-  existing?.photoTimestamp,
-            };
-          });
+//             return {
+//               id: t.id,
+//               employeeId: t.employeeId,
+//               locationId: t.locationId,
+//               date: t.date || t.scheduledDate,
+//               startTime: t.startTime || "",
+//               endTime: t.endTime || "",
+//               priority: t.priority || "medium",
+//               important: !!t.isImportant,
+//               instructions: t.instructions || t.notes || "",
+//               status,
+//               createdAt: t.createdAt || new Date().toISOString(),
+//               createdBy: t.createdBy,
+//               attempts: existing?.attempts || t.attempts || [],
+//               verificationStatus: t.verificationStatus || (checkInStage ? "verified" : existing?.verificationStatus || "none"),
+//               verifiedAt: t.verifiedAt,
+//               startedAt: existing?.startedAt || t.startedAt,
+//               reachedAt: existing?.reachedAt || t.reachedAt,
+//               checkIn: checkInStage
+//                 ? {
+//                     at: checkInStage.serverTime || checkInStage.deviceTime,
+//                     lat: checkInStage.lat,
+//                     lng: checkInStage.lng,
+//                     accuracy: checkInStage.accuracyM,
+//                     distance: checkInStage.distanceM,
+//                     // photo: checkInStage.photoSha256 ? `/photos/${checkInStage.id}` : undefined,
+//                     photo: stagePhotoUrl(checkInStage, existing?.checkIn?.photo),
+//                     override: checkInStage.overrideReason
+//                       ? {
+//                           reason: checkInStage.overrideReason,
+//                           at: checkInStage.overrideAt,
+//                           by: checkInStage.overrideBy,
+//                         }
+//                       : undefined,
+//                   }
+//                 : existing?.checkIn,
+//               checkOut: checkOutStage
+//                 ? {
+//                     at: checkOutStage.serverTime || checkOutStage.deviceTime,
+//                     lat: checkOutStage.lat,
+//                     lng: checkOutStage.lng,
+//                     accuracy: checkOutStage.accuracyM,
+//                     distance: checkOutStage.distanceM,
+//                     photo: stagePhotoUrl(checkOutStage, existing?.checkOut?.photo),
+//                     override: checkOutStage.overrideReason
+//                       ? {
+//                           reason: checkOutStage.overrideReason,
+//                           at: checkOutStage.overrideAt,
+//                           by: checkOutStage.overrideBy,
+//                         }
+//                       : undefined,
+//                   }
+//                 : existing?.checkOut,
+//               employeeLatitude: existing?.employeeLatitude ?? (checkInStage ? checkInStage.lat : undefined),
+//               employeeLongitude: existing?.employeeLongitude ?? (checkInStage ? checkInStage.lng : undefined),
+//               gpsAccuracy: existing?.gpsAccuracy ?? (checkInStage ? checkInStage.accuracyM : undefined),
+//               distanceFromLocation: existing?.distanceFromLocation ?? (checkInStage ? checkInStage.distanceM : undefined),
+//               photo:
+//   (checkOutStage && stagePhotoUrl(checkOutStage, existing?.checkOut?.photo)) ||
+//   (checkInStage && stagePhotoUrl(checkInStage, existing?.checkIn?.photo)) ||
+//   existing?.photo,
+// photoTimestamp:
+//   checkOutStage?.serverTime ||
+//   checkOutStage?.deviceTime ||
+//   checkInStage?.serverTime ||
+//   checkInStage?.deviceTime ||
+//   existing?.photoTimestamp,
+//             };
+//           });
+//         }
+
+
+if (Array.isArray(tasks)) {
+  const activeBackendTasks = tasks.filter((t: any) => t.status !== "cancelled");
+  next.tasks = activeBackendTasks.map((t) => {
+    const existing = prev.tasks.find((x) => x.id === t.id);
+
+    const checkInStage = t.stages?.find((s: any) => s.type === "check_in");
+    const checkOutStage = t.stages?.find((s: any) => s.type === "check_out");
+
+    const taskDate = t.date || t.scheduledDate;
+    const startTime = t.startTime || "";
+    const endTime = t.endTime || "";
+    const startedAt = existing?.startedAt || t.startedAt;
+    const hasCheckIn = !!(checkInStage || existing?.checkIn);
+
+    // Terminal statuses from backend must stay terminal
+    const TERMINAL = ["verified", "not_visited", "expired", "cancelled"];
+    let status: TaskStatus = t.status as TaskStatus;
+
+    if (!TERMINAL.includes(t.status) && taskDate) {
+      const dummyTask = { startTime, endTime };
+      const end = taskDateTime(taskDate, effEnd(dummyTask));
+      if (end < new Date()) {
+        // Window is over → permanent miss status
+        // Started / checked-in / any in-progress path → expired
+        // Never started → not_visited
+        status =(
+          startedAt || hasCheckIn || ["in_progress", "location_reached", "checked_in", "verification_failed"].includes(t.status)
+            ? "expired"
+            : "not_visited") as TaskStatus;
+      } else {
+        // Still inside window: do not let backend wipe a more advanced local status
+        if (
+          existing &&
+          (existing.status === "in_progress" || existing.status === "location_reached") &&
+          t.status === "assigned"
+        ) {
+          status = existing.status;
         }
+      }
+    } else if (
+      existing &&
+      MISSED.includes(existing.status as any) &&
+      (t.status === "assigned" || t.status === "pending")
+    ) {
+      // Backend still thinks assigned/pending; keep local missed
+      status = existing.status;
+    }
+
+    return {
+      id: t.id,
+      employeeId: t.employeeId,
+      locationId: t.locationId,
+      date: taskDate,
+      startTime,
+      endTime,
+      priority: t.priority || "medium",
+       important: !!t.isImportant,
+      instructions: t.instructions || t.notes || "",
+      status,
+      createdAt: t.createdAt || new Date().toISOString(),
+      createdBy: t.createdBy,
+      attempts: existing?.attempts || t.attempts || [],
+      verificationStatus:
+        t.verificationStatus ||
+        (checkInStage ? "verified" : existing?.verificationStatus || "none"),
+      verifiedAt: t.verifiedAt,
+      startedAt,
+      reachedAt: existing?.reachedAt || t.reachedAt,
+      checkIn: checkInStage
+        ? {
+            at: checkInStage.serverTime || checkInStage.deviceTime,
+            lat: checkInStage.lat,
+            lng: checkInStage.lng,
+            accuracy: checkInStage.accuracyM,
+            distance: checkInStage.distanceM,
+            photo: stagePhotoUrl(checkInStage, existing?.checkIn?.photo),
+            override: checkInStage.overrideReason
+              ? {
+                  reason: checkInStage.overrideReason,
+                  at: checkInStage.overrideAt,
+                  by: checkInStage.overrideBy,
+                }
+              : undefined,
+          }
+        : existing?.checkIn,
+      checkOut: checkOutStage
+        ? {
+            at: checkOutStage.serverTime || checkOutStage.deviceTime,
+            lat: checkOutStage.lat,
+            lng: checkOutStage.lng,
+            accuracy: checkOutStage.accuracyM,
+            distance: checkOutStage.distanceM,
+            photo: stagePhotoUrl(checkOutStage, existing?.checkOut?.photo),
+            override: checkOutStage.overrideReason
+              ? {
+                  reason: checkOutStage.overrideReason,
+                  at: checkOutStage.overrideAt,
+                  by: checkOutStage.overrideBy,
+                }
+              : undefined,
+          }
+        : existing?.checkOut,
+      employeeLatitude:
+        existing?.employeeLatitude ?? (checkInStage ? checkInStage.lat : undefined),
+      employeeLongitude:
+        existing?.employeeLongitude ?? (checkInStage ? checkInStage.lng : undefined),
+      gpsAccuracy:
+        existing?.gpsAccuracy ?? (checkInStage ? checkInStage.accuracyM : undefined),
+      distanceFromLocation:
+        existing?.distanceFromLocation ??
+        (checkInStage ? checkInStage.distanceM : undefined),
+      photo:
+        (checkOutStage && stagePhotoUrl(checkOutStage, existing?.checkOut?.photo)) ||
+        (checkInStage && stagePhotoUrl(checkInStage, existing?.checkIn?.photo)) ||
+        existing?.photo,
+      photoTimestamp:
+        checkOutStage?.serverTime ||
+        checkOutStage?.deviceTime ||
+        checkInStage?.serverTime ||
+        checkInStage?.deviceTime ||
+        existing?.photoTimestamp,
+    };
+  });
+}
 
 
         return next;

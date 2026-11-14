@@ -1,4 +1,4 @@
-import { eq, lt } from "drizzle-orm";
+import { eq, lt, sql  } from "drizzle-orm";
 import { db } from "../db/index.js";
 import { stagePhotos, rejectedSubmissions } from "../db/schema.js";
 
@@ -29,5 +29,14 @@ export const photoRepository = {
 
     if (!res[0]) return null;
     return res[0];
+  },
+
+    /** Reset expiry of every photo of a task to (upload time + N days). */
+  async setExpiryForTask(taskId: string, days: number): Promise<void> {
+    await db.execute(sql`
+      UPDATE stage_photos
+      SET expires_at = created_at + make_interval(days => ${days}::int)
+      WHERE stage_id IN (SELECT id FROM task_stages WHERE task_id = ${taskId})
+    `);
   },
 };

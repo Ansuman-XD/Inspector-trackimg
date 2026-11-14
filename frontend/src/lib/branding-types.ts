@@ -8,4 +8,5 @@ export type ReportFilterFlags = {
   department: string;
   locationId: string;
   status: string;
+  important: string;
 };

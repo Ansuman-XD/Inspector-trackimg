@@ -1,15 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Search, Image as ImageIcon, RotateCcw, Download } from "lucide-react";
+import { Search, Image as ImageIcon, RotateCcw, Download, Star  } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { EmptyState, PageHeader, Panel, PriorityTag, StatusBadge, ToneBadge } from "@/components/rt/common";
 import { useTaskDrawer } from "@/components/rt/drawerContext";
 import { useDB } from "@/hooks/useDB";
-import { ALL_STATUSES, STATUS_META } from "@/lib/status";
+import { ALL_STATUSES, STATUS_META, IMPORTANT_ROW  } from "@/lib/status";
 import { exportVisitsCsv } from "@/services/reportService";
 import { fmtDate, fmtDistance, fmtTime, todayISO, fmtWindow } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin/monitoring")({
   head: () => ({ meta: [{ title: "Visit Monitoring — Inspector Tracking System" }, { name: "description", content: "Live monitoring of field visits and GPS verification." }] }),
@@ -67,8 +68,10 @@ function Monitoring() {
               </thead>
               <tbody>
                 {rows.map((t) => (
-                  <tr key={t.id} onClick={() => drawer.open(t.id)} className="cursor-pointer border-t hover:bg-muted/40">
-                    <td className="px-4 py-2.5 font-mono text-xs">{t.id}</td>
+                  <tr key={t.id} onClick={() => drawer.open(t.id)} className={cn("cursor-pointer border-t hover:bg-muted/40", t.important && IMPORTANT_ROW)}>
+  <td className="px-4 py-2.5 font-mono text-xs">
+    {t.important && <Star className="mr-1 inline h-3.5 w-3.5 fill-warning text-warning" />}{t.id}
+  </td>
                     <td className="px-4 py-2.5">{db.employees.find((e) => e.id === t.employeeId)?.name ?? t.employeeId}</td>
                     <td className="px-4 py-2.5">{db.locations.find((l) => l.id === t.locationId)?.name}</td>
                     <td className="whitespace-nowrap px-4 py-2.5">{fmtDate(t.date)}</td>

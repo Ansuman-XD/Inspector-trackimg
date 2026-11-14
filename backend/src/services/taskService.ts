@@ -5,6 +5,7 @@ import { locationRepository } from "../repositories/locationRepository.js";
 import { haversine, todayIST, isPastCutoff, isPlannedBeforeCutoff } from "../lib/geo.js";
 import { ServiceError } from "../lib/errors.js";
 import { config } from "../config.js";
+import { photoRepository } from "../repositories/photoRepository.js";
 
 export interface AssignTaskInput {
   employeeId: string;
@@ -432,16 +433,27 @@ export const taskService = {
     });
 
     // Store photo in stage_photos table with 7 days expiration
+    // if (input.photo) {
+    //   const expiresAt = new Date(serverDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+    //   await taskRepository.createStagePhoto({
+    //     id: `PH-${crypto.randomUUID()}`,
+    //     stageId,
+    //     data: input.photo.buffer,
+    //     mime: input.photo.mime,
+    //     expiresAt,
+    //   });
+    // }
     if (input.photo) {
-      const expiresAt = new Date(serverDate.getTime() + 7 * 24 * 60 * 60 * 1000);
-      await taskRepository.createStagePhoto({
-        id: `PH-${crypto.randomUUID()}`,
-        stageId,
-        data: input.photo.buffer,
-        mime: input.photo.mime,
-        expiresAt,
-      });
-    }
+  const days = task.isImportant ? config.importantPhotoRetentionDays : config.photoRetentionDays;
+  const expiresAt = new Date(serverDate.getTime() + days * 24 * 60 * 60 * 1000);
+  await taskRepository.createStagePhoto({
+    id: `PH-${crypto.randomUUID()}`,
+    stageId,
+    data: input.photo.buffer,
+    mime: input.photo.mime,
+    expiresAt,
+  });
+}
 
     // Update task lifecycle status
     const newStatus = input.type === "check_in" ? "checked_in" : "verified";
@@ -525,5 +537,28 @@ export const taskService = {
     });
 
     return stage;
+  },
+    // 8. Admin marks / unmarks a visit as important (30-day photo retention)
+  async setImportant(taskId: string, important: boolean, adminId: string): Promise<TaskRecord> {
+    const task = await taskRepository.findById(taskId);
+    if (!task) throw new ServiceError("Visit record not found.", 404);
+    if (task.isImportant === important) return task;
+
+    const updated = await taskRepository.update(taskId, { isImportant: important });
+    await photoRepository.setExpiryForTask(
+      taskId,
+      important ? config.importantPhotoRetentionDays : config.photoRetentionDays,
+    );
+
+    await taskRepository.createHistory({
+      id: `HST-${crypto.randomUUID()}`,
+      taskId,
+      kind: "amended",
+      by: adminId,
+      note: important
+        ? `Marked important by Admin. Photos kept ${config.importantPhotoRetentionDays} days.`
+        : `Unmarked important by Admin. Photos kept ${config.photoRetentionDays} days.`,
+    });
+    return updated!;
   },
 };
