@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Camera, CameraOff, RotateCcw, Check, Loader2, Upload } from "lucide-react";
+import { Camera, CameraOff, RotateCcw, Check, Loader2, Upload, SwitchCamera } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 type State = "loading" | "live" | "captured" | "error";
@@ -11,23 +11,47 @@ export function CameraCapture({ onUse }: { onUse: (dataUrl: string, at: string) 
   const [state, setState] = useState<State>("loading");
   const [error, setError] = useState("");
   const [shot, setShot] = useState<{ url: string; at: string } | null>(null);
+    const [facing, setFacing] = useState<"environment" | "user">("environment");
 
-  async function start() {
-    setState("loading"); setError("");
+    async function start(mode: "environment" | "user" = facing) {
+    setState("loading");
+    setError("");
+    stop();
+    setFacing(mode);
     try {
-      if (!navigator.mediaDevices?.getUserMedia) throw Object.assign(new Error("unsupported"), { name: "NotSupportedError" });
-      const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 960 } }, audio: false });
+      if (!navigator.mediaDevices?.getUserMedia) {
+        throw Object.assign(new Error("unsupported"), { name: "NotSupportedError" });
+      }
+      const s = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: { ideal: mode },
+          width: { ideal: 1280 },
+          height: { ideal: 960 },
+        },
+        audio: false,
+      });
       stream.current = s;
-      if (video.current) { video.current.srcObject = s; await video.current.play().catch(() => {}); }
+      if (video.current) {
+        video.current.srcObject = s;
+        await video.current.play().catch(() => {});
+      }
       setState("live");
     } catch (e) {
       const n = (e as Error).name;
-      setError(n === "NotAllowedError" ? "Camera permission was denied. Allow camera access in your browser settings, then try again."
-        : n === "NotFoundError" ? "No camera was found on this device."
-        : n === "NotSupportedError" ? "This browser does not support live camera capture."
-        : "The camera is unavailable. It may be in use by another app.");
+      setError(
+        n === "NotAllowedError"
+          ? "Camera permission was denied. Allow camera access in your browser settings, then try again."
+          : n === "NotFoundError"
+            ? "No camera was found on this device."
+            : n === "NotSupportedError"
+              ? "This browser does not support live camera capture."
+              : "The camera is unavailable. It may be in use by another app."
+      );
       setState("error");
     }
+  }
+    function flipCamera() {
+    start(facing === "environment" ? "user" : "environment");
   }
   function stop() { stream.current?.getTracks().forEach((t) => t.stop()); stream.current = null; }
 
@@ -56,7 +80,16 @@ export function CameraCapture({ onUse }: { onUse: (dataUrl: string, at: string) 
   return (
     <div className="space-y-3">
       <div className="relative aspect-[3/4] w-full overflow-hidden rounded-xl bg-foreground/95 sm:aspect-video">
-        <video ref={video} playsInline muted className={state === "live" ? "h-full w-full object-cover" : "hidden"} />
+       <video
+  ref={video}
+  playsInline
+  muted
+  className={
+    state === "live"
+      ? `h-full w-full object-cover${facing === "user" ? " scale-x-[-1]" : ""}`
+      : "hidden"
+  }
+/>
         {state === "captured" && shot && <img src={shot.url} alt="Captured visit" className="h-full w-full object-cover" />}
         {state === "loading" && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-background/80"><Loader2 className="h-7 w-7 animate-spin" /><span className="text-sm">Starting camera…</span></div>
@@ -66,7 +99,16 @@ export function CameraCapture({ onUse }: { onUse: (dataUrl: string, at: string) 
             <CameraOff className="h-8 w-8" /><p className="text-sm">{error}</p>
           </div>
         )}
-        {state === "live" && <div className="pointer-events-none absolute inset-6 rounded-lg border-2 border-background/40" />}
+        {state === "live" && (
+  <button
+    type="button"
+    onClick={flipCamera}
+    className="absolute right-3 top-3 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full bg-background/80 text-foreground shadow-md"
+    aria-label="Switch camera"
+  >
+    <SwitchCamera className="h-5 w-5" />
+  </button>
+)}
       </div>
       {state === "live" && <Button size="lg" className="h-14 w-full text-base" onClick={capture}><Camera className="mr-2 h-5 w-5" />Capture Photo</Button>}
       {state === "captured" && shot && (
@@ -77,7 +119,7 @@ export function CameraCapture({ onUse }: { onUse: (dataUrl: string, at: string) 
       )}
       {state === "error" && (
         <div className="grid grid-cols-2 gap-3">
-          <Button size="lg" variant="outline" className="h-14" onClick={start}>Try Again</Button>
+          <Button size="lg" variant="outline" className="h-14" onClick={() => { setShot(null); start(facing); }}>Try Again</Button>
           <label className="inline-flex h-14 cursor-pointer items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground">
             <Upload className="mr-2 h-4 w-4" />Use Device Camera
             <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => e.target.files?.[0] && fromFile(e.target.files[0])} />

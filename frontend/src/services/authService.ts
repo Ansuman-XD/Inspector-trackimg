@@ -9,6 +9,9 @@ export const authService = {
   async login(userId: string, password: string, role: Role, remember: boolean): Promise<Session> {
     const id = userId.trim().toUpperCase();
 
+    // Clear any expired/stale tokens so login request is clean
+    tokenStorage.clearTokens();
+
     // Call real backend API
     const res = await apiClient<{
       accessToken: string;
@@ -52,9 +55,7 @@ export const authService = {
     try {
       storage.update((d) => ({
         ...d,
-        users: d.users.map((u) =>
-          u.id === id ? { ...u, lastLogin: now.toISOString() } : u
-        ),
+        users: d.users.map((u) => (u.id === id ? { ...u, lastLogin: now.toISOString() } : u)),
       }));
     } catch {}
 
@@ -73,14 +74,28 @@ export const authService = {
     }
   },
 
-  current(): Session | null {
+   current(): Session | null {
     const s = prefs.get<Session | null>(SESSION_KEY, null);
     if (!s) return null;
+
+    // Local idle timeout expired
     if (new Date(s.expiresAt) < new Date()) {
       tokenStorage.clearTokens();
       prefs.remove(SESSION_KEY);
       return null;
     }
+
+    // If access token is gone but refresh token still exists, keep UI session
+    // (apiClient will refresh on next API call)
+    const access = tokenStorage.getAccessToken();
+    const refresh = tokenStorage.getRefreshToken();
+
+    // Only kill UI session when BOTH tokens are gone (true logout / refresh failed)
+    if (!access && !refresh) {
+      prefs.remove(SESSION_KEY);
+      return null;
+    }
+
     return s;
   },
 

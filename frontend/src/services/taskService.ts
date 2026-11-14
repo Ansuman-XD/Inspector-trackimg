@@ -360,12 +360,12 @@ export const taskService = {
     const radius = loc.verificationRadius ?? DEFAULT_RADIUS;
     let distance = haversine(loc.lat, loc.lng, fix.lat, fix.lng);
     // For check-out, if check-in was already recorded, compute distance relative to either the target location or the verified check-in coordinates
-    if (stage === "checkout" && t.checkIn?.lat != null && t.checkIn?.lng != null) {
-      const distFromCheckIn = haversine(t.checkIn.lat, t.checkIn.lng, fix.lat, fix.lng);
-      if (distFromCheckIn <= radius || distFromCheckIn < distance) {
-        distance = distFromCheckIn;
-      }
-    }
+    // if (stage === "checkout" && t.checkIn?.lat != null && t.checkIn?.lng != null) {
+    //   const distFromCheckIn = haversine(t.checkIn.lat, t.checkIn.lng, fix.lat, fix.lng);
+    //   if (distFromCheckIn <= radius || distFromCheckIn < distance) {
+    //     distance = distFromCheckIn;
+    //   }
+    // }
     const passed = distance <= radius;
     const label = stage === "checkout" ? "Check-out" : "Check-in";
 
@@ -429,13 +429,49 @@ export const taskService = {
     });
   },
   /** Admin override for a stranded stage. */
-  override(id: string, stage: "checkin" | "checkout", reason: string) {
+  // override(id: string, stage: "checkin" | "checkout", reason: string) {
+  //   const r = reason.trim();
+  //   if (r.length < 5) throw new Error("Enter a reason / justification for the override.");
+  //   patchTask(id, (t, db) => {
+  //     if (stage === "checkin" && t.checkIn) throw new Error("This visit is already checked in.");
+  //     if (stage === "checkout" && !t.checkIn) throw new Error("Check-in must be completed (or overridden) first.");
+  //     if (stage === "checkout" && t.checkOut) throw new Error("This visit is already checked out.");
+  //     const now = new Date().toISOString();
+  //     const rec: VisitStage = { at: now, override: { reason: r, at: now, by: ADMIN } };
+  //     const { emp, loc } = names(db, t);
+  //     const label = stage === "checkin" ? "Check-In" : "Check-Out";
+  //     const common = { overriddenByAdmin: true, adminOverrideReason: r, adminOverrideTimestamp: now, startedAt: t.startedAt ?? now };
+  //     const task: Task = stage === "checkin"
+  //       ? { ...t, ...common, status: "checked_in", checkIn: rec }
+  //       : { ...t, ...common, status: "verified", checkOut: rec, verifiedAt: now, verificationStatus: t.verificationStatus === "failed" ? "none" : t.verificationStatus };
+  //     return {
+  //       task,
+  //       notifications: makeNotification(db, { type: "location_verified", title: `Admin override: ${label}`, message: `${label} at ${loc} was marked verified by Admin. Reason: ${r}`, audience: t.employeeId, taskId: id }),
+  //       activities: makeActivity(db, { kind: "warning", actor: ADMIN, message: `Admin override — ${label} for ${emp} at ${loc}. Reason: ${r}` }),
+  //     };
+  //   });
+  // },
+
+    /** Admin override for a stranded stage. Persists to the backend first. */
+  async override(id: string, stage: "checkin" | "checkout", reason: string) {
     const r = reason.trim();
-    if (r.length < 5) throw new Error("Enter a reason / justification for the override.");
+    // Backend requires at least 10 characters
+    if (r.length < 10) throw new Error("Enter a reason / justification (at least 10 characters).");
+
+    const cur = storage.get().tasks.find((x) => x.id === id);
+    if (!cur) throw new Error("Visit record not found.");
+    if (stage === "checkin" && cur.checkIn) throw new Error("This visit is already checked in.");
+    if (stage === "checkout" && !cur.checkIn) throw new Error("Check-in must be completed (or overridden) first.");
+    if (stage === "checkout" && cur.checkOut) throw new Error("This visit is already checked out.");
+
+    // 1. Save in the database
+    await apiClient(`/tasks/${id}/stages/${stage}/override`, {
+      method: "POST",
+      body: JSON.stringify({ reason: r }),
+    });
+
+    // 2. Update the local cache so the UI changes immediately
     patchTask(id, (t, db) => {
-      if (stage === "checkin" && t.checkIn) throw new Error("This visit is already checked in.");
-      if (stage === "checkout" && !t.checkIn) throw new Error("Check-in must be completed (or overridden) first.");
-      if (stage === "checkout" && t.checkOut) throw new Error("This visit is already checked out.");
       const now = new Date().toISOString();
       const rec: VisitStage = { at: now, override: { reason: r, at: now, by: ADMIN } };
       const { emp, loc } = names(db, t);

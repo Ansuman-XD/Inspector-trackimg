@@ -40,7 +40,7 @@ export function PlaceSearch({ onSelect }: Props) {
   useEffect(() => {
     if (timer.current) clearTimeout(timer.current);
     const query = q.trim();
-    if (query.length < 3) {
+    if (query.length < 2) {
       setResults(null);
       setLoading(false);
       return;
@@ -49,22 +49,50 @@ export function PlaceSearch({ onSelect }: Props) {
     timer.current = setTimeout(async () => {
       const mySeq = ++seq.current;
       try {
-        const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&countrycodes=in&q=${encodeURIComponent(query)}`;
-        const res = await fetch(url, { headers: { Accept: "application/json" } });
+               const params = new URLSearchParams({
+          format: "jsonv2",
+          addressdetails: "1",
+          namedetails: "1",
+          limit: "20",
+          countrycodes: "in",
+          q: query,
+        });
+        const url = `https://nominatim.openstreetmap.org/search?${params.toString()}`;
+        const res = await fetch(url, {
+          headers: {
+            Accept: "application/json",
+            "User-Agent": "InspectorTrackingSystem/1.0 (admin-locations)",
+          },
+        });
         if (!res.ok) throw new Error("Search failed");
         const data = (await res.json()) as NominatimItem[];
         if (mySeq !== seq.current) return;
-        setResults(
-          data.map((d) => {
-            const parts = d.display_name.split(", ");
-            return {
-              name: d.name || parts[0],
-              address: d.display_name,
-              lat: +(+d.lat).toFixed(6),
-              lng: +(+d.lon).toFixed(6),
-            };
-          })
-        );
+                const seen = new Set<string>();
+        const mapped: PlaceResult[] = [];
+
+        for (const d of data as NominatimItem[]) {
+          const lat = +(+d.lat).toFixed(6);
+          const lng = +(+d.lon).toFixed(6);
+          const key = `${lat},${lng}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
+
+          const parts = (d.display_name || "").split(", ").filter(Boolean);
+          const name =
+            d.name ||
+            parts[0] ||
+            query;
+
+          mapped.push({
+            name,
+            address: d.display_name || name,
+            lat,
+            lng,
+          });
+        }
+
+        setResults(mapped);
+        setOpen(true);
         setOpen(true);
       } catch {
         if (mySeq === seq.current) {

@@ -1,6 +1,7 @@
 import { ImageOff, LogIn, LogOut, ShieldAlert, ShieldCheck } from "lucide-react";
 import { fmtCoord, fmtDateTime, fmtDistance } from "@/lib/format";
 import type { VisitStage } from "@/types";
+import { AuthenticatedImage } from "./AuthenticatedImage";
 
 /** Evidence card for one stage (check-in or check-out) of a visit. */
 export function StageCard({ kind, stage, onPhoto }: { kind: "checkin" | "checkout"; stage?: VisitStage; onPhoto?: (url: string) => void }) {
@@ -17,8 +18,13 @@ export function StageCard({ kind, stage, onPhoto }: { kind: "checkin" | "checkou
       {stage && (
         <>
           {stage.photo ? (
-            <button type="button" onClick={() => onPhoto?.(stage.photo!)} className="block w-full"><img src={stage.photo} alt={`${title} photo`} className="aspect-video w-full object-cover" /></button>
-          ) : !stage.override ? (
+  <AuthenticatedImage
+    src={stage.photo}
+    alt={`${title} photo`}
+    className="aspect-video w-full object-cover"
+    onClick={stage.photo ? () => onPhoto?.(stage.photo!) : undefined}
+  />
+) : !stage.override ? (
             <div className="flex aspect-[3/1] items-center justify-center gap-2 bg-muted text-xs text-muted-foreground"><ImageOff className="h-4 w-4" />Photo retained on the submitting device</div>
           ) : null}
           <dl className="grid grid-cols-2 gap-x-3 gap-y-1 px-3 py-2 text-xs">

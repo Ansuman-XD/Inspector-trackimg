@@ -1,12 +1,14 @@
 import { Hono } from "hono";
+import { eq } from "drizzle-orm";
 import { photoRepository } from "../repositories/photoRepository.js";
 import { taskRepository } from "../repositories/taskRepository.js";
 import { requireAuth, requireAdmin } from "../middlewares/auth.js";
 import { config } from "../config.js";
-
+import { db } from "../db/index.js";
+import { taskStages } from "../db/schema.js";
 export const photoRoutes = new Hono();
 
-// GET /photos/:id (Authenticated, with cache headers; returns photo bytes or 410 if expired)
+// GET /photos/:id (Authenticated; id can be photo id PH-... or stage id STG-...)
 photoRoutes.get("/:id", requireAuth, async (c) => {
   const user = c.get("user");
   const id = c.req.param("id");
@@ -21,30 +23,45 @@ photoRoutes.get("/:id", requireAuth, async (c) => {
     return c.json({ error: "Photo not found or expired" }, 404);
   }
 
-  // Ownership check: Inspectors can only access photos for their own visits
+  // Ownership: non-admin can only see photos of their own visits
   if (user.role !== "admin") {
-    // Find stage to check ownership
-    const stages = await taskRepository.findStagesByTaskId(photo.stageId);
-    // Alternatively look up through task
-    const stage = await taskRepository.findStageByIdempotencyKey(photo.stageId); // fallback
+    const stageRows = await db
+      .select({ taskId: taskStages.taskId })
+      .from(taskStages)
+      .where(eq(taskStages.id, photo.stageId))
+      .limit(1);
+
+    const stage = stageRows[0];
+    if (!stage) {
+      return c.json({ error: "Photo not found" }, 404);
+    }
+
+    const task = await taskRepository.findById(stage.taskId);
+    if (!task || task.employeeId !== user.userId) {
+      return c.json({ error: "Forbidden" }, 403);
+    }
   }
 
   // Check expiration
   if (new Date() > new Date(photo.expiresAt)) {
-    // Lazy cleanup
     await photoRepository.deleteExpiredPhotos();
     return c.json({ error: "Photo expired", expired: true }, 410);
   }
 
-  // Cache headers: private, max-age=86400 (1 day)
-  c.header("Content-Type", photo.mime || "image/jpeg");
-  c.header("Cache-Control", "private, max-age=86400");
-  c.header("Content-Length", String(photo.data.length));
+  // Convert Buffer → Uint8Array so Hono's TypeScript types accept it
+   const bytes = Buffer.from(photo.data as Buffer);
 
-  return c.body(photo.data);
+  return new Response(bytes as unknown as BodyInit, {
+    status: 200,
+    headers: {
+      "Content-Type": photo.mime || "image/jpeg",
+      "Cache-Control": "private, max-age=86400",
+      "Content-Length": String(bytes.byteLength),
+    },
+  });
 });
 
-// GET /photos/rejected/:id (Admin only: view photo from rejected submission)
+// GET /photos/rejected/:id (Admin only)
 photoRoutes.get("/rejected/:id", requireAuth, requireAdmin, async (c) => {
   const id = c.req.param("id");
   const photo = await photoRepository.findRejectedPhoto(id);
@@ -53,11 +70,16 @@ photoRoutes.get("/rejected/:id", requireAuth, requireAdmin, async (c) => {
     return c.json({ error: "No photo attached to this rejected submission" }, 404);
   }
 
-  c.header("Content-Type", photo.mime || "image/jpeg");
-  c.header("Cache-Control", "private, max-age=86400");
-  c.header("Content-Length", String(photo.data.length));
+  const bytes = Buffer.from(photo.data as Buffer);
 
-  return c.body(photo.data);
+  return new Response(bytes as unknown as BodyInit, {
+    status: 200,
+    headers: {
+      "Content-Type": photo.mime || "image/jpeg",
+      "Cache-Control": "private, max-age=86400",
+      "Content-Length": String(bytes.byteLength),
+    },
+  });
 });
 
 // POST /internal/cleanup (Protected by X-Cleanup-Secret header; deletes expired photos)
