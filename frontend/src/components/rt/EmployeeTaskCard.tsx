@@ -3,6 +3,8 @@ import { MapPin, Clock, ChevronRight } from "lucide-react";
 import { PriorityTag, StatusBadge } from "@/components/rt/common";
 import { fmtDate, fmtTime, fmtWindow } from "@/lib/format";
 import type { Task, VisitLocation } from "@/types";
+import { isSelfPlanned } from "@/lib/visitRules";
+
 
 export function EmployeeTaskCard({ task, location }: { task: Task; location?: VisitLocation }) {
   return (
@@ -12,7 +14,12 @@ export function EmployeeTaskCard({ task, location }: { task: Task; location?: Vi
           <p className="truncate font-medium">{location?.name ?? task.locationId}</p>
           <p className="text-xs text-muted-foreground">{location?.type}</p>
         </div>
-        <StatusBadge status={task.status} />
+        <div className="flex flex-wrap items-center gap-2">
+  <StatusBadge status={task.status} />
+  <span className="rounded-full border px-2 py-0.5 text-[11px] text-muted-foreground">
+    {isSelfPlanned(task) ? "Self" : "Admin"}
+  </span>
+</div>
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
         <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" />{fmtDate(task.date)} · {fmtWindow(task)}</span>

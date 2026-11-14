@@ -5,8 +5,23 @@ import { taskDateTime } from "@/lib/format";
 import { effEnd } from "@/lib/visitRules";
 import { MISSED } from "./taskService";
 
+
+const API_BASE_URL = ((import.meta as any).env?.VITE_API_URL || "http://localhost:3001").replace(/\/$/, "");
+
+function stagePhotoUrl(
+  stage: { id: string; photoSha256?: string | null },
+  existingPhoto?: string
+): string | undefined {
+  if (stage.photoSha256) return `${API_BASE_URL}/photos/${stage.id}`;
+  if (existingPhoto?.startsWith("data:") || existingPhoto?.startsWith("blob:")) return existingPhoto;
+  return existingPhoto;
+}
+
+
 let isSyncing = false;
 let syncInterval: any = null;
+
+
 
 export const syncService = {
   async syncFromBackend(): Promise<void> {
@@ -139,7 +154,8 @@ export const syncService = {
                     lng: checkInStage.lng,
                     accuracy: checkInStage.accuracyM,
                     distance: checkInStage.distanceM,
-                    photo: `/photos/${checkInStage.id}`,
+                    // photo: checkInStage.photoSha256 ? `/photos/${checkInStage.id}` : undefined,
+                    photo: stagePhotoUrl(checkInStage, existing?.checkIn?.photo),
                     override: checkInStage.overrideReason
                       ? {
                           reason: checkInStage.overrideReason,
@@ -156,7 +172,7 @@ export const syncService = {
                     lng: checkOutStage.lng,
                     accuracy: checkOutStage.accuracyM,
                     distance: checkOutStage.distanceM,
-                    photo: `/photos/${checkOutStage.id}`,
+                    photo: stagePhotoUrl(checkOutStage, existing?.checkOut?.photo),
                     override: checkOutStage.overrideReason
                       ? {
                           reason: checkOutStage.overrideReason,
@@ -170,6 +186,16 @@ export const syncService = {
               employeeLongitude: existing?.employeeLongitude ?? (checkInStage ? checkInStage.lng : undefined),
               gpsAccuracy: existing?.gpsAccuracy ?? (checkInStage ? checkInStage.accuracyM : undefined),
               distanceFromLocation: existing?.distanceFromLocation ?? (checkInStage ? checkInStage.distanceM : undefined),
+              photo:
+  (checkOutStage && stagePhotoUrl(checkOutStage, existing?.checkOut?.photo)) ||
+  (checkInStage && stagePhotoUrl(checkInStage, existing?.checkIn?.photo)) ||
+  existing?.photo,
+photoTimestamp:
+  checkOutStage?.serverTime ||
+  checkOutStage?.deviceTime ||
+  checkInStage?.serverTime ||
+  checkInStage?.deviceTime ||
+  existing?.photoTimestamp,
             };
           });
         }

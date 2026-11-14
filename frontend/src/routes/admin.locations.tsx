@@ -15,7 +15,7 @@ import { useTaskDrawer } from "@/components/rt/drawerContext";
 import { useDB } from "@/hooks/useDB";
 import { locationService, type LocationInput } from "@/services/locationService";
 import { exportLocationVisitsCsv, exportLocationsCsv } from "@/services/reportService";
-import { getCurrentPosition } from "@/services/verificationService";
+import { getBestPosition } from "@/services/verificationService";
 import { taskStats } from "@/services/taskService";
 import { fmtCoord, fmtDate, fmtDateTime } from "@/lib/format";
 import type { VisitLocation } from "@/types";
@@ -128,13 +128,39 @@ function LocationForm({ id, initial, onClose }: { id?: string; initial: Location
   const [d, setD] = useState(initial);
   const [err, setErr] = useState("");
   const [locating, setLocating] = useState(false);
+    const [radiusMode, setRadiusMode] = useState<string>(
+    RADIUS_OPTIONS.includes(initial.verificationRadius)
+      ? String(initial.verificationRadius)
+      : "custom"
+  );
   const set = <K extends keyof LocationInput>(k: K, v: LocationInput[K]) => setD((p) => ({ ...p, [k]: v }));
   const hasPt = Number.isFinite(d.lat) && Number.isFinite(d.lng);
-  async function useCurrent() {
+   async function useCurrent() {
     setLocating(true);
-    try { const f = await getCurrentPosition(); setD((p) => ({ ...p, lat: +f.lat.toFixed(6), lng: +f.lng.toFixed(6) })); toast.success(`Location captured${f.accuracy != null ? ` (±${f.accuracy} m)` : ""}.`); }
-    catch (x) { toast.error((x as Error).message); }
-    finally { setLocating(false); }
+    try {
+      const f = await getBestPosition({
+        samples: 5,
+        maxWaitMs: 20000,
+        desiredAccuracyM: 25,
+      });
+      setD((p) => ({
+        ...p,
+        lat: +f.lat.toFixed(6),
+        lng: +f.lng.toFixed(6),
+      }));
+      toast.success(
+        `Location captured${f.accuracy != null ? ` (±${f.accuracy} m)` : ""}.`
+      );
+      if (f.accuracy != null && f.accuracy > 50) {
+        toast.message(
+          "GPS accuracy is still low. Stand outdoors and try again if the pin looks wrong."
+        );
+      }
+    } catch (x) {
+      toast.error((x as Error).message);
+    } finally {
+      setLocating(false);
+    }
   }
   async function save() {
     setErr("");
@@ -158,15 +184,52 @@ function LocationForm({ id, initial, onClose }: { id?: string; initial: Location
             <Field label="Location Type"><Select value={d.type} onValueChange={(v) => set("type", v as LocationInput["type"])}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{db.locationTypes.map((t) => <SelectItem key={t.id} value={t.name}>{t.name}</SelectItem>)}</SelectContent></Select></Field>
             <Field label="Address"><Input value={d.address} onChange={(e) => set("address", e.target.value)} /></Field>
             <Field label="Description"><Textarea rows={3} value={d.description} onChange={(e) => set("description", e.target.value)} /></Field>
-            <Field label="Verification Radius (meters)">
+                        <Field label="Verification Radius (meters)">
               <div className="flex gap-2">
-                <Select value={RADIUS_OPTIONS.includes(d.verificationRadius) ? String(d.verificationRadius) : "custom"} onValueChange={(v) => v !== "custom" && set("verificationRadius", Number(v))}>
-                  <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
-                  <SelectContent>{RADIUS_OPTIONS.map((r) => <SelectItem key={r} value={String(r)}>{r} m</SelectItem>)}<SelectItem value="custom">Custom</SelectItem></SelectContent>
+                <Select
+                  value={radiusMode}
+                  onValueChange={(v) => {
+                    setRadiusMode(v);
+                    if (v !== "custom") {
+                      set("verificationRadius", Number(v));
+                    }
+                  }}
+                >
+                  <SelectTrigger className="w-36">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {RADIUS_OPTIONS.map((r) => (
+                      <SelectItem key={r} value={String(r)}>
+                        {r} m
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="custom">Custom</SelectItem>
+                  </SelectContent>
                 </Select>
-                <Input type="number" min={10} max={2000} value={Number.isFinite(d.verificationRadius) ? d.verificationRadius : ""} onChange={(e) => set("verificationRadius", e.target.value === "" ? NaN : Number(e.target.value))} className="w-28 font-mono" aria-label="Radius in metres" />
+
+                {radiusMode === "custom" && (
+                  <Input
+                    type="number"
+                    min={10}
+                    max={2000}
+                    value={Number.isFinite(d.verificationRadius) ? d.verificationRadius : ""}
+                    onChange={(e) =>
+                      set(
+                        "verificationRadius",
+                        e.target.value === "" ? NaN : Number(e.target.value)
+                      )
+                    }
+                    className="w-28 font-mono"
+                    aria-label="Custom radius in metres"
+                    placeholder="e.g. 150"
+                  />
+                )}
               </div>
-              <p className="mt-1 text-xs text-muted-foreground">Employees must be within this distance of the pin to check in and check out. Use a larger radius for big yards or long track sections.</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Employees must be within this distance of the pin to check in and check out.
+                Choose Custom to enter any value between 10 and 2000 m.
+              </p>
             </Field>
             <Field label="Status"><Select value={d.status} onValueChange={(v) => set("status", v as LocationInput["status"])}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="active">Active</SelectItem><SelectItem value="inactive">Inactive</SelectItem></SelectContent></Select></Field>
           </div>

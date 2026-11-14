@@ -34,10 +34,18 @@ export function TaskDrawer({ taskId, onClose }: { taskId: string | null; onClose
   const e = t && db.employees.find((x) => x.id === t.employeeId);
   const l = t && db.locations.find((x) => x.id === t.locationId);
 
-  function doOverride() {
+  // function doOverride() {
+  //   if (!t || !overrideStage) return;
+  //   try {
+  //     taskService.override(t.id, overrideStage, reason);
+  //     toast.success(overrideStage === "checkin" ? "Check-in marked verified by override." : "Check-out marked verified. Visit completed.");
+  //     setOverrideStage(null); setReason("");
+  //   } catch (x) { toast.error((x as Error).message); }
+  // }
+  async function doOverride() {
     if (!t || !overrideStage) return;
     try {
-      taskService.override(t.id, overrideStage, reason);
+      await taskService.override(t.id, overrideStage, reason);
       toast.success(overrideStage === "checkin" ? "Check-in marked verified by override." : "Check-out marked verified. Visit completed.");
       setOverrideStage(null); setReason("");
     } catch (x) { toast.error((x as Error).message); }
@@ -139,7 +147,7 @@ export function TaskDrawer({ taskId, onClose }: { taskId: string | null; onClose
                 </label>
                 <DialogFooter>
                   <Button variant="outline" onClick={() => setOverrideStage(null)}>Cancel</Button>
-                  <Button onClick={doOverride} disabled={reason.trim().length < 5}>Confirm Override</Button>
+                  <Button onClick={doOverride} disabled={reason.trim().length < 10}>Confirm Override</Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>

@@ -333,12 +333,12 @@ export const taskService = {
     const radiusM = loc.verificationRadius;
 
     // For check-out, if inspector verified check-in at site, allow distance to check-in coordinates as well
-    if (input.type === "check_out" && checkInStage?.lat != null && checkInStage?.lng != null) {
-      const distFromCheckIn = haversine(checkInStage.lat, checkInStage.lng, input.lat, input.lng);
-      if (distFromCheckIn <= radiusM || distFromCheckIn < distanceM) {
-        distanceM = distFromCheckIn;
-      }
-    }
+    // if (input.type === "check_out" && checkInStage?.lat != null && checkInStage?.lng != null) {
+    //   const distFromCheckIn = haversine(checkInStage.lat, checkInStage.lng, input.lat, input.lng);
+    //   if (distFromCheckIn <= radiusM || distFromCheckIn < distanceM) {
+    //     distanceM = distFromCheckIn;
+    //   }
+    // }
 
     console.log(`📍 [STAGE DISTANCE CHECK] Task: ${taskId}, Type: ${input.type}, Loc: (${loc.lat}, ${loc.lng}), Input: (${input.lat}, ${input.lng}), Distance: ${Math.round(distanceM)}m, Allowed: ${radiusM}m, Accuracy: ${Math.round(input.accuracy)}m`);
 

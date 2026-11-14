@@ -1,16 +1,25 @@
 import { ShieldCheck, ImageOff } from "lucide-react";
 import { fmtCoord, fmtDate, fmtDistance, fmtTime } from "@/lib/format";
 import type { Task, VisitLocation, Employee } from "@/types";
+import { AuthenticatedImage } from "./AuthenticatedImage";
 
 /** Visual verification record associated with a visit photo (not embedded EXIF). */
 export function VisitRecord({ task, location, employee, photo, photoAt, compact }: { task: Task; location: VisitLocation; employee?: Employee; photo?: string; photoAt?: string; compact?: boolean }) {
-  const img = photo ?? task.photo;
+    const img = photo ?? task.checkOut?.photo ?? task.checkIn?.photo ?? task.photo;
   const at = photoAt ?? task.photoTimestamp ?? task.verifiedAt;
   const ok = task.verificationStatus === "verified";
   return (
     <div className="overflow-hidden rounded-lg border bg-card">
       {img ? (
-        <img src={img} alt={`Visit at ${location.name}`} className={compact ? "aspect-video w-full object-cover" : "max-h-[60vh] w-full object-contain bg-foreground/90"} />
+        <AuthenticatedImage
+  src={img}
+  alt={`Visit at ${location.name}`}
+  className={
+    compact
+      ? "aspect-video w-full object-cover"
+      : "max-h-[60vh] w-full object-contain bg-foreground/90"
+  }
+/>
       ) : (
         <div className="flex aspect-video flex-col items-center justify-center gap-2 bg-muted text-sm text-muted-foreground">
           <ImageOff className="h-6 w-6" />Photograph retained on the submitting device
