@@ -13,7 +13,7 @@ import { taskService } from "@/services/taskService";
 import { fmtCoord, fmtDate, fmtDateTime, fmtDistance, fmtPhone, fmtWindow } from "@/lib/format";
 import { markerColor } from "@/lib/status";
 import { isSelfPlanned } from "@/lib/visitRules";
-import { Maximize2, ShieldAlert, Trash2 } from "lucide-react";
+import { Maximize2, ShieldAlert, Trash2, Star } from "lucide-react";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -62,7 +62,13 @@ export function TaskDrawer({ taskId, onClose }: { taskId: string | null; onClose
       toast.error((x as Error).message);
     }
   }
-
+async function toggleImportant() {
+  if (!t) return;
+  try {
+    await taskService.setImportant(t.id, !t.important);
+    toast.success(t.important ? "Unmarked. Photos follow the 7-day rule." : "Marked important. Photos kept for 30 days.");
+  } catch (x) { toast.error((x as Error).message); }
+}
   return (
     <Sheet open={!!taskId} onOpenChange={(o) => !o && onClose()}>
       <SheetContent className="w-full overflow-y-auto p-0 sm:max-w-xl">
@@ -125,6 +131,10 @@ export function TaskDrawer({ taskId, onClose }: { taskId: string | null; onClose
                 {t.checkIn && !t.checkOut && (
                   <Button variant="outline" size="sm" onClick={() => { setOverrideStage("checkout"); setReason(""); }}><ShieldAlert className="mr-1.5 h-4 w-4" />Override Check-Out</Button>
                 )}
+                <Button variant="outline" size="sm" onClick={toggleImportant}>
+  <Star className={`mr-1.5 h-4 w-4 ${t.important ? "fill-warning text-warning" : ""}`} />
+  {t.important ? "Unmark Important" : "Mark Important"}
+</Button>
                 <Button variant="outline" size="sm" className="text-danger hover:text-danger" onClick={() => setConfirmDelete(true)}><Trash2 className="mr-1.5 h-4 w-4" />Delete Visit</Button>
               </div>
               <p className="mt-2 text-xs text-muted-foreground">Overrides mark a stage verified without GPS/photo and release the employee's sequential lock. Deleting keeps a copy in history.</p>

@@ -19,15 +19,28 @@ export function PlanVisitDialog({ employeeId, task, open, onClose, onSaved }: { 
   const err = validatePlan(db, employeeId, d, task?.id);
   const willArchive = !!task && d.locationId !== task.locationId && pastCutoff(task.date) && plannedBeforeCutoff(task);
 
-  function save() {
-    setTouched(true);
-    if (err) return;
-    try {
-      if (task) { taskService.updatePlan(employeeId, task.id, d); toast.success(willArchive ? "Visit updated. The original plan is kept in history." : "Visit updated."); onSaved?.(task.id); }
-      else { const t = taskService.plan(employeeId, d); toast.success("Visit planned."); onSaved?.(t.id); }
-      onClose();
-    } catch (e) { toast.error((e as Error).message); }
+ async function save() {
+  setTouched(true);
+  if (err) return;
+  try {
+    if (task) {
+      await taskService.updatePlan(employeeId, task.id, d);
+      toast.success(
+        willArchive
+          ? "Visit updated. The original plan is kept in history."
+          : "Visit updated."
+      );
+      onSaved?.(task.id);
+    } else {
+      const t = await taskService.plan(employeeId, d);
+      toast.success("Visit planned.");
+      onSaved?.(t.id);
+    }
+    onClose();
+  } catch (e) {
+    toast.error((e as Error).message);
   }
+}
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>

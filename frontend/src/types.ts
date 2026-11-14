@@ -93,6 +93,7 @@ export interface Task {
   overriddenByAdmin?: boolean;
   adminOverrideReason?: string;
   adminOverrideTimestamp?: string;
+  important?: boolean;
 }
 
 /** One verified stage of a visit (check-in or check-out). */

@@ -16,9 +16,13 @@ export interface ReportFilters {
   /** "employee" | "admin" | "" — who performed the check-in/out */
   checkInBy: string;
   checkOutBy: string;
+    /** "important" | "normal" | "" (all) */
+  important: string;
 }
 
+
 export function filterTasks(db: DB, f: ReportFilters): Task[] {
+  
   return db.tasks
     .filter((t) => (!f.from || t.date >= f.from) && (!f.to || t.date <= f.to))
     .filter((t) => !f.employeeId || t.employeeId === f.employeeId)
@@ -28,7 +32,8 @@ export function filterTasks(db: DB, f: ReportFilters): Task[] {
     .filter((t) => !f.planning || (f.planning === "self" ? isSelfPlanned(t) : !isSelfPlanned(t)))
     .filter((t) => !f.checkInBy || (f.checkInBy === "admin" ? !!t.checkIn?.override : !!t.checkIn && !t.checkIn.override))
     .filter((t) => !f.checkOutBy || (f.checkOutBy === "admin" ? !!t.checkOut?.override : !!t.checkOut && !t.checkOut.override))
-    .sort((a, b) => (b.date + b.startTime).localeCompare(a.date + a.startTime));
+    .sort((a, b) => (b.date + b.startTime).localeCompare(a.date + a.startTime))
+    .filter((t) => !f.important || (f.important === "important" ? !!t.important : !t.important));
 }
 
 const esc = (v: unknown) => {

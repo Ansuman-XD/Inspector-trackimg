@@ -11,6 +11,7 @@ import { taskRoutes } from "./routes/taskRoutes.js";
 import { photoRoutes } from "./routes/photoRoutes.js";
 import { adminRoutes } from "./routes/adminRoutes.js";
 import { reportRoutes } from "./routes/reportRoutes.js";
+import { photoRepository } from "./repositories/photoRepository.js";
 
 const app = new Hono();
 
@@ -88,6 +89,13 @@ if (process.env.NODE_ENV !== "test") {
       console.log("=======================================================\n");
     }
   );
+  const runCleanup = () =>
+  photoRepository
+    .deleteExpiredPhotos()
+    .then((n) => n && console.log(`🧹 Deleted ${n} expired photo(s)`))
+    .catch((e) => console.error("Photo cleanup failed:", e));
+runCleanup();
+setInterval(runCleanup, 6 * 60 * 60 * 1000); // every 6 hours
 }
 
 export default app;

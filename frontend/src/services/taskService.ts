@@ -77,26 +77,90 @@ export function validatePlan(db: DB, employeeId: string, i: PlanInput, ignoreTas
 }
 
 /** Automatic lifecycle transitions driven by the clock. */
+// function applyClock(db: DB): DB {
+//   const now = new Date();
+//   let changed = false;
+//   let notifications = db.notifications;
+//   let activities = db.activities;
+//   const tasks = db.tasks.map((t) => {
+//     if (t.status === "verified" || MISSED.includes(t.status)) return t;
+//     const end = taskDateTime(t.date, effEnd(t));
+//     const start = taskDateTime(t.date, effStart(t));
+//     let next: TaskStatus = t.status;
+//     if (end < now) next = t.startedAt ? "expired" : "not_visited";
+//     else if (t.status === "assigned" && t.startTime && start < now) next = "pending";
+//     if (next === t.status) return t;
+//     changed = true;
+//     if (MISSED.includes(next)) {
+//       const { emp, loc } = names(db, t);
+//       const tmp = { ...db, notifications, activities };
+//       notifications = makeNotification(tmp, { type: "deadline_passed", title: "Deadline passed", message: `${emp} — ${loc} was not completed in time.`, audience: "admin", taskId: t.id });
+//       notifications = makeNotification({ ...tmp, notifications }, { type: "deadline_passed", title: "Visit deadline passed", message: `${loc} was not completed in time.`, audience: t.employeeId, taskId: t.id });
+//       activities = makeActivity({ ...tmp, activities }, { kind: "warning", actor: "system", message: `Visit deadline expired for ${emp} at ${loc}.` });
+//     }
+//     return { ...t, status: next };
+//   });
+//   return changed ? { ...db, tasks, notifications, activities } : db;
+// }
+
+/** Automatic lifecycle transitions driven by the clock. */
 function applyClock(db: DB): DB {
   const now = new Date();
   let changed = false;
   let notifications = db.notifications;
   let activities = db.activities;
   const tasks = db.tasks.map((t) => {
+    // Never change terminal statuses
     if (t.status === "verified" || MISSED.includes(t.status)) return t;
+
     const end = taskDateTime(t.date, effEnd(t));
     const start = taskDateTime(t.date, effStart(t));
     let next: TaskStatus = t.status;
-    if (end < now) next = t.startedAt ? "expired" : "not_visited";
-    else if (t.status === "assigned" && t.startTime && start < now) next = "pending";
+
+    if (end < now) {
+      // Window over: any non-terminal status becomes a miss
+      const started =
+        !!t.startedAt ||
+        !!t.checkIn ||
+        ["in_progress", "location_reached", "checked_in", "verification_failed"].includes(
+          t.status
+        );
+      next = started ? "expired" : "not_visited";
+    } else if (t.status === "assigned" && t.startTime && start < now) {
+      next = "pending";
+    }
+
     if (next === t.status) return t;
     changed = true;
+
     if (MISSED.includes(next)) {
       const { emp, loc } = names(db, t);
       const tmp = { ...db, notifications, activities };
-      notifications = makeNotification(tmp, { type: "deadline_passed", title: "Deadline passed", message: `${emp} — ${loc} was not completed in time.`, audience: "admin", taskId: t.id });
-      notifications = makeNotification({ ...tmp, notifications }, { type: "deadline_passed", title: "Visit deadline passed", message: `${loc} was not completed in time.`, audience: t.employeeId, taskId: t.id });
-      activities = makeActivity({ ...tmp, activities }, { kind: "warning", actor: "system", message: `Visit deadline expired for ${emp} at ${loc}.` });
+      notifications = makeNotification(tmp, {
+        type: "deadline_passed",
+        title: "Deadline passed",
+        message: `${emp} — ${loc} was not completed in time.`,
+        audience: "admin",
+        taskId: t.id,
+      });
+      notifications = makeNotification(
+        { ...tmp, notifications },
+        {
+          type: "deadline_passed",
+          title: "Visit deadline passed",
+          message: `${loc} was not completed in time.`,
+          audience: t.employeeId,
+          taskId: t.id,
+        }
+      );
+      activities = makeActivity(
+        { ...tmp, activities },
+        {
+          kind: "warning",
+          actor: "system",
+          message: `Visit deadline expired for ${emp} at ${loc}.`,
+        }
+      );
     }
     return { ...t, status: next };
   });
@@ -486,6 +550,14 @@ export const taskService = {
         activities: makeActivity(db, { kind: "warning", actor: ADMIN, message: `Admin override — ${label} for ${emp} at ${loc}. Reason: ${r}` }),
       };
     });
+  },
+    /** Admin: star a visit so its photos are kept 30 days instead of 7. */
+  async setImportant(id: string, important: boolean) {
+    await apiClient(`/tasks/${id}/important`, {
+      method: "PATCH",
+      body: JSON.stringify({ important }),
+    });
+    patchTask(id, (t) => ({ task: { ...t, important } }));
   },
 };
 
