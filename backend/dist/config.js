@@ -9,10 +9,12 @@ export const config = {
         accessExpiresIn: "15m",
         refreshExpiresInDays: 7,
     },
-    corsOrigins: (process.env.CORS_ORIGINS || "http://localhost:5173,http://localhost:3000")
+    corsOrigins: (process.env.CORS_ORIGINS || "http://localhost:5173,http://localhost:3000,https://inspector-trackimg2.vercel.app")
         .split(",")
         .map((o) => o.trim()),
     internalCleanupSecret: process.env.INTERNAL_CLEANUP_SECRET || "dev_cleanup_secret",
     gpsMaxAccuracyMeters: Number(process.env.GPS_MAX_ACCURACY_METERS) || 100,
     timeDiffFlagThresholdMinutes: Number(process.env.TIME_DIFF_FLAG_THRESHOLD_MINUTES) || 10,
+    photoRetentionDays: Number(process.env.PHOTO_RETENTION_DAYS) || 7,
+    importantPhotoRetentionDays: Number(process.env.IMPORTANT_PHOTO_RETENTION_DAYS) || 30,
 };

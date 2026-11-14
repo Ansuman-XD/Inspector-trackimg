@@ -7,4 +7,6 @@ export declare const photoRepository: {
         data: Buffer | null;
         mime: string | null;
     } | null>;
+    /** Reset expiry of every photo of a task to (upload time + N days). */
+    setExpiryForTask(taskId: string, days: number): Promise<void>;
 };

@@ -11,4 +11,6 @@ export declare const config: {
     internalCleanupSecret: string;
     gpsMaxAccuracyMeters: number;
     timeDiffFlagThresholdMinutes: number;
+    photoRetentionDays: number;
+    importantPhotoRetentionDays: number;
 };
