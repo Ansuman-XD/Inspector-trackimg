@@ -12,6 +12,9 @@ import { photoRoutes } from "./routes/photoRoutes.js";
 import { adminRoutes } from "./routes/adminRoutes.js";
 import { reportRoutes } from "./routes/reportRoutes.js";
 import { photoRepository } from "./repositories/photoRepository.js";
+import { notificationRoutes } from "./routes/notificationRoutes.js";
+import { notificationRepository } from "./repositories/notificationRepository.js";
+// import { config } from "./config.js";   // already imported, so skip if present
 const app = new Hono();
 // CORS configuration
 app.use("/*", cors({
@@ -40,6 +43,7 @@ app.route("/photos", photoRoutes);
 app.route("/admin", adminRoutes);
 app.route("/reports", reportRoutes);
 app.route("/", photoRoutes); // For POST /internal/cleanup directly
+app.route("/notifications", notificationRoutes);
 // Server startup
 if (process.env.NODE_ENV !== "test") {
     const server = serve({
@@ -84,5 +88,24 @@ if (process.env.NODE_ENV !== "test") {
         .catch((e) => console.error("Photo cleanup failed:", e));
     runCleanup();
     setInterval(runCleanup, 6 * 60 * 60 * 1000); // every 6 hours
+    //   const runNotificationCleanup = () => {
+    //   const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    //   db.delete(notifications)
+    //     .where(lt(notifications.createdAt, cutoff))
+    //     .returning()
+    //     .then((rows) => rows.length && console.log(`🧹 Deleted ${rows.length} old notification(s)`))
+    //     .catch((e) => console.error("Notification cleanup failed:", e));
+    // };
+    // runNotificationCleanup();
+    // setInterval(runNotificationCleanup, 6 * 60 * 60 * 1000); // every 6 hours
+    const runNotificationCleanup = () => {
+        const cutoff = new Date(Date.now() - config.notificationRetentionDays * 24 * 60 * 60 * 1000);
+        notificationRepository
+            .deleteOlderThan(cutoff)
+            .then((n) => n && console.log(`🧹 Deleted ${n} expired notification(s)`))
+            .catch((e) => console.error("Notification cleanup failed:", e));
+    };
+    runNotificationCleanup();
+    setInterval(runNotificationCleanup, 6 * 60 * 60 * 1000); // every 6 hours
 }
 export default app;

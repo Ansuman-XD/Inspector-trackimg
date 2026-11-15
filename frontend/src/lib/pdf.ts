@@ -64,10 +64,10 @@ function header(doc: jsPDF, title: string, ref: string, generated: string): numb
   doc.setFont("helvetica", "bold");
   doc.setTextColor(...NAVY);
   doc.setFontSize(16);
-  doc.text("INDIAN RAILWAYS", PW / 2, 18, { align: "center" });
+  doc.text("RESEARCH DESIGNS & STANDARDS ORGANISATION", PW / 2, 18, { align: "center" });
   doc.setFontSize(10);
   doc.setTextColor(...MAROON);
-  doc.text("EAST COAST RAILWAY  |  KHURDA ROAD DIVISION", PW / 2, 24, { align: "center" });
+  doc.text("KOLKATA BRANCH OFFICE · KOILAGHAT STREET, KOLKATA – 700 001", PW / 2, 24, { align: "center" });
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
   doc.setTextColor(...GREY);

@@ -13,4 +13,5 @@ export declare const config: {
     timeDiffFlagThresholdMinutes: number;
     photoRetentionDays: number;
     importantPhotoRetentionDays: number;
+    notificationRetentionDays: number;
 };

@@ -45,7 +45,7 @@ function Visits() {
 
   const s = useMemo(() => taskStats(past), [past]);
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">My Visits</h1>
         {employee && (
@@ -54,17 +54,54 @@ function Visits() {
           </Button>
         )}
       </div>
-      <div className="flex flex-wrap items-end gap-2">
-        <div className="space-y-1">
-          <label className="text-xs text-muted-foreground" htmlFor="visits-from">From date</label>
-          <Input id="visits-from" type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="w-[170px]" />
-        </div>
-        <div className="space-y-1">
-          <label className="text-xs text-muted-foreground" htmlFor="visits-to">To date</label>
-          <Input id="visits-to" type="date" value={to} onChange={(e) => setTo(e.target.value)} className="w-[170px]" />
-        </div>
-        <Button size="sm" variant="ghost" onClick={() => { setFrom(""); setTo(""); }}><RotateCcw className="mr-1 h-3.5 w-3.5" />Reset</Button>
-      </div>
+     {/* Filter bar */}
+<div className="rounded-xl border bg-card p-4 shadow-[var(--shadow-card)] space-y-3">
+  {/* Row 1: From date + To date */}
+  <div className="grid grid-cols-2 gap-3">
+    <div className="space-y-1.5">
+      <label className="text-xs font-medium text-foreground" htmlFor="visits-from">
+        From date
+      </label>
+      <Input
+        id="visits-from"
+        type="date"
+        value={from}
+        onChange={(e) => setFrom(e.target.value)}
+        className="w-full bg-background"
+      />
+    </div>
+    <div className="space-y-1.5">
+      <label className="text-xs font-medium text-foreground" htmlFor="visits-to">
+        To date
+      </label>
+      <Input
+        id="visits-to"
+        type="date"
+        value={to}
+        onChange={(e) => setTo(e.target.value)}
+        className="w-full bg-background"
+      />
+    </div>
+  </div>
+
+  {/* Row 2: Reset button */}
+  {/* Row 2: Reset button */}
+<div>
+  <Button
+    size="sm"
+    variant="outline"
+    className="w-full h-9"
+    onClick={() => {
+      setFrom("");
+      setTo("");
+    }}
+    disabled={!from && !to}
+  >
+    <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
+    Reset
+  </Button>
+</div>
+</div>
       <div className="grid grid-cols-2 gap-2">
         <div className="rounded-lg border bg-card p-3"><p className="text-2xl font-semibold tabular">{s.verified}</p><p className="text-xs text-muted-foreground">Verified</p></div>
         <div className="rounded-lg border bg-card p-3"><p className="text-2xl font-semibold tabular">{s.missed}</p><p className="text-xs text-muted-foreground">Missed</p></div>

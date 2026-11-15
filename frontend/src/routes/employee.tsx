@@ -8,6 +8,9 @@ import { useRoleGuard } from "@/hooks/useSession";
 import { useNavigate } from "@tanstack/react-router";
 import { EmployeeSessionContext } from "@/components/rt/employeeContext";
 import { syncService } from "@/services/syncService";
+import { useNotificationAlerts } from "@/hooks/useNotificationAlerts";
+import { NotificationPermissionBanner } from "@/components/rt/NotificationPermissionBanner";
+import { OrgStrip } from "@/components/rt/OrgLogos";
 
 export const Route = createFileRoute("/employee")({
   ssr: false,
@@ -25,6 +28,7 @@ function EmployeeLayout() {
   const { session, logout, warn, stay } = useRoleGuard("employee");
   const navigate = useNavigate();
   const [, force] = useState(0);
+useNotificationAlerts(session?.userId ?? "");
 
   useEffect(() => {
     if (session) {
@@ -38,7 +42,9 @@ function EmployeeLayout() {
   return (
     <EmployeeSessionContext.Provider value={{ session, logout }}>
       <div className="mx-auto min-h-screen max-w-md bg-background pb-20">
-        <header className="sticky top-0 z-20 flex h-14 items-center gap-2 border-b bg-card/95 px-4 backdrop-blur">
+        <div className="sticky top-0 z-20">
+        <OrgStrip />
+        <header className="flex h-14 items-center gap-2 border-b bg-card/95 px-4 backdrop-blur">
           <Logo className="scale-90 origin-left" />
           <div className="ml-auto flex items-center gap-1">
             <ConnectionStatus compact />
@@ -46,7 +52,8 @@ function EmployeeLayout() {
             <ThemeToggle />
           </div>
         </header>
-        <main className="p-4"><Outlet /></main>
+      </div>
+        <main className="p-4"><NotificationPermissionBanner /><Outlet /></main>
         <nav className="fixed inset-x-0 bottom-0 z-30 border-t bg-card pb-[env(safe-area-inset-bottom)]">
           <div className="mx-auto grid max-w-md grid-cols-4">
             {NAV.map((n) => (

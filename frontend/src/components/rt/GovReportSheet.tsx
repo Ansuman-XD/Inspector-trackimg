@@ -31,7 +31,7 @@ export function GovReportSheet({ db, rows, filterSummary, from, to }: Props) {
       <div className="gov-head">
         <p className="gov-hi">भारत सरकार · रेल मंत्रालय</p>
         <p className="gov-en">GOVERNMENT OF INDIA · MINISTRY OF RAILWAYS</p>
-        <p className="gov-zone">EAST COAST RAILWAY · KHURDA ROAD DIVISION</p>
+        <p className="gov-zone">RESEARCH DESIGNS &amp; STANDARDS ORGANISATION · KOLKATA</p>
       </div>
       <div className="gov-rule" />
 

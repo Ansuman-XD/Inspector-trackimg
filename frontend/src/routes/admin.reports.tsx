@@ -69,8 +69,8 @@ const printReport = () => {
       </div>} />
       <Panel className="mb-4 no-print">
         <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-5">
-          <label className="text-xs text-muted-foreground">From Date<Input type="date" value={f.from} onChange={(e) => set("from")(e.target.value)} className="mt-1" /></label>
-          <label className="text-xs text-muted-foreground">To Date<Input type="date" value={f.to} onChange={(e) => set("to")(e.target.value)} className="mt-1" /></label>
+          <label className="text-xs text-foreground font-medium">From Date<Input type="date" value={f.from} onChange={(e) => set("from")(e.target.value)} className="mt-1" /></label>
+          <label className="text-xs text-foreground font-medium">To Date<Input type="date" value={f.to} onChange={(e) => set("to")(e.target.value)} className="mt-1" /></label>
           <Sel label="Planning Visit" value={f.planning} onChange={set("planning")} opts={[["self", "Self-Planned (Employee)"], ["admin", "Admin-Assigned"]]} />
           <Sel label="Check-In By" value={f.checkInBy} onChange={set("checkInBy")} opts={[["employee", "Employee"], ["admin", "Admin Override"]]} />
           <Sel label="Check-Out By" value={f.checkOutBy} onChange={set("checkOutBy")} opts={[["employee", "Employee"], ["admin", "Admin Override"]]} />
@@ -126,9 +126,19 @@ const printReport = () => {
 
 function Sel({ label, value, onChange, opts }: { label: string; value: string; onChange: (v: string) => void; opts: string[][] }) {
   return (
-    <label className="text-xs text-muted-foreground">{label}
-      <Select value={value || ALL} onValueChange={onChange}><SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-        <SelectContent><SelectItem value={ALL}>All</SelectItem>{opts.map(([k, n]) => <SelectItem key={k} value={k}>{n}</SelectItem>)}</SelectContent></Select>
+    <label className="text-xs font-medium text-foreground">
+      {label}
+      <Select value={value || ALL} onValueChange={onChange}>
+        <SelectTrigger className="mt-1 text-foreground data-[placeholder]:text-muted-foreground">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value={ALL}>All</SelectItem>
+          {opts.map(([k, n]) => (
+            <SelectItem key={k} value={k}>{n}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </label>
   );
 }

@@ -572,6 +572,11 @@ function EmployeeForm({
   }
   async function save() {
     setErr("");
+    const email = d.email.trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i.test(email)) {
+    setErr("Enter a valid email address (e.g. name@example.com).");
+    return;
+  }
     try {
       if (mode === "add") await employeeService.create(d);
       else await employeeService.update(initial.id, d);

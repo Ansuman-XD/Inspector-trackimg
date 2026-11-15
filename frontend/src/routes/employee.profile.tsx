@@ -5,6 +5,8 @@ import { Avatar, KV } from "@/components/rt/common";
 import { useEmployeeSession } from "@/components/rt/employeeContext";
 import { useDB } from "@/hooks/useDB";
 import { fmtDate, fmtPhone } from "@/lib/format";
+import { OrgCorners, ORG } from "@/components/rt/OrgLogos";
+
 
 export const Route = createFileRoute("/employee/profile")({
   head: () => ({ meta: [{ title: "Profile — Inspector Tracking System" }, { name: "description", content: "Employee profile details." }] }),
@@ -22,6 +24,11 @@ function Profile() {
         <KV k="Employee ID" v={e.id} mono /><KV k="Department" v={e.department} /><KV k="Phone" v={fmtPhone(e.phone)} /><KV k="Email" v={e.email} /><KV k="Joined" v={fmtDate(e.joiningDate)} />
       </div>}
       <Button variant="outline" className="w-full" onClick={logout}><LogOut className="mr-2 h-4 w-4" />Sign out</Button>
+     <div className="rounded-lg border bg-card p-4">
+  <OrgCorners size={38} />
+  <p className="mt-3 text-center text-xs text-muted-foreground">{ORG.name} · {ORG.branch}</p>
+</div>
     </div>
+    
   );
 }

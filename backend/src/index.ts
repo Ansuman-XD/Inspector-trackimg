@@ -12,6 +12,12 @@ import { photoRoutes } from "./routes/photoRoutes.js";
 import { adminRoutes } from "./routes/adminRoutes.js";
 import { reportRoutes } from "./routes/reportRoutes.js";
 import { photoRepository } from "./repositories/photoRepository.js";
+import { lt } from "drizzle-orm";
+import { db } from "./db/index.js";
+import { notifications } from "./db/schema.js";
+import { notificationRoutes } from "./routes/notificationRoutes.js";
+import { notificationRepository } from "./repositories/notificationRepository.js";
+// import { config } from "./config.js";   // already imported, so skip if present
 
 const app = new Hono();
 
@@ -24,7 +30,7 @@ app.use(
     allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     exposeHeaders: ["Content-Length", "Content-Type", "Content-Disposition"],
     maxAge: 600,
-  })
+  }),
 );
 
 // Health check endpoint
@@ -47,6 +53,7 @@ app.route("/photos", photoRoutes);
 app.route("/admin", adminRoutes);
 app.route("/reports", reportRoutes);
 app.route("/", photoRoutes); // For POST /internal/cleanup directly
+app.route("/notifications", notificationRoutes);
 
 // Server startup
 if (process.env.NODE_ENV !== "test") {
@@ -60,8 +67,12 @@ if (process.env.NODE_ENV !== "test") {
       console.log("       🚆 INDIAN RAILWAY INSPECTOR TRACKING API        ");
       console.log("=======================================================");
       console.log(`⚡ [SERVER] Listening on http://localhost:${info.port}`);
-      console.log(`🌐 [ENV]    Environment: ${process.env.NODE_ENV || "development"}`);
-      console.log(`🔒 [CORS]   Allowed Origins: ${config.corsOrigins.join(", ")}`);
+      console.log(
+        `🌐 [ENV]    Environment: ${process.env.NODE_ENV || "development"}`,
+      );
+      console.log(
+        `🔒 [CORS]   Allowed Origins: ${config.corsOrigins.join(", ")}`,
+      );
 
       // Verify Database Connection
       try {
@@ -69,33 +80,64 @@ if (process.env.NODE_ENV !== "test") {
         const dbStatus = await checkDatabaseConnection();
         if (dbStatus.ok) {
           console.log(`✅ [DATABASE] Connected successfully!`);
-          console.log(`              ${dbStatus.version?.split(" on ")[0] || "PostgreSQL"}`);
+          console.log(
+            `              ${dbStatus.version?.split(" on ")[0] || "PostgreSQL"}`,
+          );
         } else {
           console.error(`❌ [DATABASE] Connection failed: ${dbStatus.message}`);
         }
       } catch (err: any) {
-        console.error(`❌ [DATABASE] Error during connection check: ${err.message}`);
+        console.error(
+          `❌ [DATABASE] Error during connection check: ${err.message}`,
+        );
       }
 
       console.log("-------------------------------------------------------");
       console.log("📌 Mounted Endpoints:");
       console.log("   • GET    /health");
-      console.log("   • POST   /auth/login, /auth/refresh, /auth/logout, GET /auth/me");
-      console.log("   • CRUD   /departments, /location-types, /locations, /employees");
-      console.log("   • CRUD   /tasks, /tasks/:id/checkin, /tasks/:id/checkout, /tasks/:id/override");
+      console.log(
+        "   • POST   /auth/login, /auth/refresh, /auth/logout, GET /auth/me",
+      );
+      console.log(
+        "   • CRUD   /departments, /location-types, /locations, /employees",
+      );
+      console.log(
+        "   • CRUD   /tasks, /tasks/:id/checkin, /tasks/:id/checkout, /tasks/:id/override",
+      );
       console.log("   • GET    /photos/:id, POST /internal/cleanup");
       console.log("   • GET    /admin/monitoring");
       console.log("   • GET    /reports/visits (CSV export)");
       console.log("=======================================================\n");
-    }
+    },
   );
   const runCleanup = () =>
-  photoRepository
-    .deleteExpiredPhotos()
-    .then((n) => n && console.log(`🧹 Deleted ${n} expired photo(s)`))
-    .catch((e) => console.error("Photo cleanup failed:", e));
-runCleanup();
-setInterval(runCleanup, 6 * 60 * 60 * 1000); // every 6 hours
+    photoRepository
+      .deleteExpiredPhotos()
+      .then((n) => n && console.log(`🧹 Deleted ${n} expired photo(s)`))
+      .catch((e) => console.error("Photo cleanup failed:", e));
+  runCleanup();
+  
+  setInterval(runCleanup, 6 * 60 * 60 * 1000); // every 6 hours
+
+//   const runNotificationCleanup = () => {
+//   const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+//   db.delete(notifications)
+//     .where(lt(notifications.createdAt, cutoff))
+//     .returning()
+//     .then((rows) => rows.length && console.log(`🧹 Deleted ${rows.length} old notification(s)`))
+//     .catch((e) => console.error("Notification cleanup failed:", e));
+// };
+// runNotificationCleanup();
+// setInterval(runNotificationCleanup, 6 * 60 * 60 * 1000); // every 6 hours
+  const runNotificationCleanup = () => {
+    const cutoff = new Date(Date.now() - config.notificationRetentionDays * 24 * 60 * 60 * 1000);
+    notificationRepository
+      .deleteOlderThan(cutoff)
+      .then((n) => n && console.log(`🧹 Deleted ${n} expired notification(s)`))
+      .catch((e) => console.error("Notification cleanup failed:", e));
+  };
+  runNotificationCleanup();
+  setInterval(runNotificationCleanup, 6 * 60 * 60 * 1000); // every 6 hours
 }
 
 export default app;
