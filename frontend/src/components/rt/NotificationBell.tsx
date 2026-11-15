@@ -1,7 +1,7 @@
 import { Bell, CheckCheck } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useDB } from "@/hooks/useDB";
-import { notificationService } from "@/services/notificationService";
+import { notificationService, pruneNotifications } from "@/services/notificationService";
 import { relTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { NotificationType } from "@/types";
@@ -13,7 +13,7 @@ const dot: Record<NotificationType, string> = {
 
 export function NotificationBell({ audience, onOpenTask }: { audience: string; onOpenTask?: (id: string) => void }) {
   const db = useDB();
-  const list = notificationService.forAudience(db, audience);
+const list = pruneNotifications(notificationService.forAudience(db, audience));
   const unread = list.filter((n) => !n.read).length;
   return (
     <Popover>

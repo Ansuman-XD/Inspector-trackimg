@@ -15,7 +15,7 @@ import { useRoleGuard } from "@/hooks/useSession";
 import { useDB } from "@/hooks/useDB";
 import { OPEN } from "@/services/taskService";
 import { todayISO } from "@/lib/format";
-
+import { RdsoLogo, IrLogo, ORG, OrgCorners } from "@/components/rt/OrgLogos";
 import { syncService } from "@/services/syncService";
 
 export const Route = createFileRoute("/admin")({
@@ -35,6 +35,7 @@ const NAV = [
   { to: "/admin/map", label: "Visit Map", icon: MapIcon, section: "Operations" },
   { to: "/admin/reports", label: "Reports", icon: FileBarChart, section: "Operations" },
 ] as const;
+
 
 function SideNav({ onNavigate }: { onNavigate?: () => void }) {
   const db = useDB();
@@ -99,13 +100,21 @@ function AdminLayout() {
         </Sheet>
         <header className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b bg-card/95 px-4 backdrop-blur sm:px-6 no-print">
           <button className="inline-flex h-9 w-9 items-center justify-center rounded-md border lg:hidden" onClick={() => setMobileNav(true)} aria-label="Open navigation"><Menu className="h-4 w-4" /></button>
-          <div className="text-sm text-muted-foreground hidden sm:block">East Coast Railway · Khurda Road Division</div>
+<div className="hidden items-center gap-3 sm:flex">
+  <RdsoLogo size={34} />
+  <div className="hidden leading-tight xl:block">
+    <p className="text-xs font-semibold">{ORG.name}</p>
+    <p className="text-[11px] text-muted-foreground">{ORG.branch} · {ORG.ministry}</p>
+  </div>
+</div>
           <div className="ml-auto flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={() => setShareOpen(true)} title="Share the app install link"><Share2 className="mr-1.5 h-4 w-4" />Share App</Button>
             <ConnectionStatus />
             <ThemeToggle />
             <span className="hidden items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium sm:inline-flex"><ShieldCheck className="h-3.5 w-3.5 text-primary" />Admin · {session.name}</span>
             <Button variant="outline" size="sm" onClick={() => setConfirmOut(true)}><LogOut className="mr-1.5 h-4 w-4" />Logout</Button>
+            <span className="mx-1 hidden h-8 w-px bg-border sm:block" aria-hidden />
+<IrLogo size={34} className="hidden sm:block" />
           </div>
         </header>
         <main className="mx-auto max-w-[1440px] p-4 sm:p-6 print-area"><Outlet /></main>

@@ -19,4 +19,7 @@ export const config = {
   timeDiffFlagThresholdMinutes: Number(process.env.TIME_DIFF_FLAG_THRESHOLD_MINUTES) || 10,
   photoRetentionDays: Number(process.env.PHOTO_RETENTION_DAYS) || 7,
 importantPhotoRetentionDays: Number(process.env.IMPORTANT_PHOTO_RETENTION_DAYS) || 30,
+notificationRetentionDays: Number(
+  process.env.NOTIFICATION_RETENTION_DAYS || 7
+),
 };

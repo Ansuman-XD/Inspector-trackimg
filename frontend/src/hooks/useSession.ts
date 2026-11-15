@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { authService } from "@/services/authService";
 import { taskService } from "@/services/taskService";
 import type { Role, Session } from "@/types";
+import { notificationService } from "@/services/notificationService";
 
 /**
  * Guards a role area: redirects if not signed in / wrong role, slides the idle
@@ -27,6 +28,7 @@ export function useRoleGuard(role: Role) {
     }
     setSession(s);
     taskService.tick();
+    notificationService.purgeOld();
 
     let last = 0;
     const onAct = () => {
@@ -40,6 +42,7 @@ export function useRoleGuard(role: Role) {
 
     const iv = setInterval(() => {
       taskService.tick();
+      notificationService.purgeOld();
       const cur = authService.current();
       // Also treat missing JWT as expired
       const hasToken =

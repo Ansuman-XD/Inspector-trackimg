@@ -9,7 +9,9 @@ function validate(e: EmployeeInput) {
   if (!/^[A-Z0-9]{3,12}$/.test(e.id)) throw new Error("Employee ID must be 3–12 letters/digits (e.g. EMP010).");
   if (e.name.trim().length < 3) throw new Error("Enter the employee's full name.");
   if (!/^[6-9]\d{9}$/.test(e.phone.replace(/\D/g, "").slice(-10))) throw new Error("Enter a valid 10-digit Indian mobile number.");
-  if (!/^\S+@\S+\.\S+$/.test(e.email)) throw new Error("Enter a valid email address.");
+ if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i.test(e.email.trim())) {
+  throw new Error("Enter a valid email address (e.g. name@example.com).");
+}
   if (!e.department) throw new Error("Select a department.");
   if (e.password !== undefined && e.password.length < 6) throw new Error("Password must be at least 6 characters.");
 }

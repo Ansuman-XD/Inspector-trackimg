@@ -6,7 +6,7 @@ import { Apple, ChevronRight, Download, MonitorSmartphone, Share as ShareIcon, X
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import applogoUrl from "@/assets/applogo.avif";
-
+import { OrgCorners } from "@/components/rt/OrgLogos";
 
 export const Route = createFileRoute("/install")({
   ssr: false,
@@ -92,7 +92,7 @@ function InstallPage() {
         <h1 className="mt-4 text-xl font-semibold tracking-tight">Inspector Tracking System</h1>
         <p className="mt-1 text-xs uppercase tracking-[0.14em] text-muted-foreground">Field Visit Management</p>
         <p className="mt-3 text-sm text-muted-foreground">Official Railway Field Inspection &amp; Visit Management System. Install the app, then sign in with your employee or admin account.</p>
-
+<OrgCorners size={36} className="mx-auto mt-6 justify-center" />
         <div className="mt-7 space-y-3">
           <Button size="lg" className="h-12 w-full text-base" onClick={install}>
             <Download className="mr-2 h-5 w-5" />Install App
