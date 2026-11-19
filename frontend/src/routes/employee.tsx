@@ -1,6 +1,6 @@
 import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Home, ClipboardList, History, UserCircle } from "lucide-react";
+import { Home, ClipboardList, History, UserCircle, HelpCircle } from "lucide-react";
 import { ConnectionStatus, Logo, ThemeToggle } from "@/components/rt/common";
 import { NotificationBell } from "@/components/rt/NotificationBell";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -11,6 +11,7 @@ import { syncService } from "@/services/syncService";
 import { useNotificationAlerts } from "@/hooks/useNotificationAlerts";
 import { NotificationPermissionBanner } from "@/components/rt/NotificationPermissionBanner";
 import { OrgStrip } from "@/components/rt/OrgLogos";
+import { HelpDialog } from "@/components/rt/HelpDialog";
 
 export const Route = createFileRoute("/employee")({
   ssr: false,
@@ -28,6 +29,7 @@ function EmployeeLayout() {
   const { session, logout, warn, stay } = useRoleGuard("employee");
   const navigate = useNavigate();
   const [, force] = useState(0);
+  const [helpOpen, setHelpOpen] = useState(false);
 useNotificationAlerts(session?.userId ?? "");
 
   useEffect(() => {
@@ -49,12 +51,13 @@ useNotificationAlerts(session?.userId ?? "");
           <div className="ml-auto flex items-center gap-1">
             <ConnectionStatus compact />
             <NotificationBell audience={session.userId} onOpenTask={(id) => { navigate({ to: "/employee/tasks/$id", params: { id } }); force((n) => n + 1); }} />
+              <button onClick={() => setHelpOpen(true)} aria-label="Help" className="inline-flex h-9 w-9 items-center justify-center rounded-md border bg-card text-muted-foreground hover:text-foreground"><HelpCircle className="h-4 w-4" /></button>
             <ThemeToggle />
           </div>
         </header>
       </div>
         <main className="p-4"><NotificationPermissionBanner /><Outlet /></main>
-        <nav className="fixed inset-x-0 bottom-0 z-30 border-t bg-card pb-[env(safe-area-inset-bottom)]">
+        <nav className="rt-nav-hide fixed inset-x-0 bottom-0 z-30 border-t bg-card pb-[env(safe-area-inset-bottom)]">
           <div className="mx-auto grid max-w-md grid-cols-4">
             {NAV.map((n) => (
               <Link key={n.to} to={n.to} className="flex flex-col items-center gap-0.5 py-2 text-[11px] text-muted-foreground" activeProps={{ className: "!text-primary font-semibold" }}>
@@ -70,6 +73,7 @@ useNotificationAlerts(session?.userId ?? "");
           <AlertDialogFooter><AlertDialogCancel onClick={logout}>Sign out</AlertDialogCancel><AlertDialogAction onClick={stay}>Stay signed in</AlertDialogAction></AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <HelpDialog open={helpOpen} onOpenChange={setHelpOpen} role="employee" />
     </EmployeeSessionContext.Provider>
   );
 }

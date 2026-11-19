@@ -2,7 +2,7 @@ import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
   LayoutDashboard, Users, MapPin, ClipboardPlus, MonitorCheck, Map as MapIcon, FileBarChart, LogOut, Menu, Clock, ShieldCheck, Share2,
-  Building2, Tags,
+  Building2, Tags, HelpCircle
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ import { OPEN } from "@/services/taskService";
 import { todayISO } from "@/lib/format";
 import { RdsoLogo, IrLogo, ORG, OrgCorners } from "@/components/rt/OrgLogos";
 import { syncService } from "@/services/syncService";
+import { HelpDialog } from "@/components/rt/HelpDialog";
 
 export const Route = createFileRoute("/admin")({
   ssr: false,
@@ -80,7 +81,7 @@ function AdminLayout() {
   const [photoId, setPhotoId] = useState<string | null>(null);
   const [confirmOut, setConfirmOut] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
-
+const [helpOpen, setHelpOpen] = useState(false);
   useEffect(() => {
     if (session) {
       syncService.startAutoSync(6000);
@@ -94,7 +95,7 @@ function AdminLayout() {
   return (
     <TaskDrawerContext.Provider value={{ open: setTaskId, photo: setPhotoId }}>
       <div className="min-h-screen bg-background lg:pl-[250px]">
-        <aside className="fixed inset-y-0 left-0 z-30 hidden w-[250px] lg:block no-print"><SideNav /></aside>
+        <aside className="rt-nav-hide fixed inset-y-0 left-0 z-30 hidden w-[250px] lg:block no-print"><SideNav /></aside>
         <Sheet open={mobileNav} onOpenChange={setMobileNav}>
           <SheetContent side="left" className="w-[260px] border-0 p-0"><SheetTitle className="sr-only">Navigation</SheetTitle><SideNav onNavigate={() => setMobileNav(false)} /></SheetContent>
         </Sheet>
@@ -108,6 +109,9 @@ function AdminLayout() {
   </div>
 </div>
           <div className="ml-auto flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => setHelpOpen(true)} title="Help">
+  <HelpCircle className="mr-1.5 h-4 w-4" />Help
+</Button>
             <Button variant="outline" size="sm" onClick={() => setShareOpen(true)} title="Share the app install link"><Share2 className="mr-1.5 h-4 w-4" />Share App</Button>
             <ConnectionStatus />
             <ThemeToggle />
@@ -121,6 +125,7 @@ function AdminLayout() {
       </div>
       <TaskDrawer taskId={taskId} onClose={() => setTaskId(null)} />
       <ShareAppDialog open={shareOpen} onOpenChange={setShareOpen} />
+      <HelpDialog open={helpOpen} onOpenChange={setHelpOpen} role="admin" />
       <PhotoLightbox taskId={photoId} onClose={() => setPhotoId(null)} />
       <AlertDialog open={confirmOut} onOpenChange={setConfirmOut}>
         <AlertDialogContent>
