@@ -183,7 +183,7 @@ function Login() {
                   <Input
                     value={id}
                     onChange={(e) => setId(e.target.value)}
-                    placeholder={role === "admin" ? "ADMIN001" : "EMP001"}
+                    placeholder={role === "admin" ? "ADMIN005" : "EMP001"}
                     className="h-11 pl-9 uppercase placeholder:normal-case"
                     autoComplete="username"
                     autoCapitalize="characters"
@@ -244,7 +244,7 @@ function Login() {
               </Button>
             </form>
 
-            <div className="mt-5 rounded-lg border bg-card p-3 text-xs text-muted-foreground">
+            {/* <div className="mt-5 rounded-lg border bg-card p-3 text-xs text-muted-foreground">
               <p className="mb-2 font-semibold text-foreground">Presentation accounts</p>
 
               <div className="grid grid-cols-2 gap-y-1 font-mono">
@@ -273,7 +273,7 @@ function Login() {
                 </button>
                 <span>Rajesh Kumar</span>
               </div>
-            </div>
+            </div> */}
             <p className="mt-3 text-center text-[11px] text-muted-foreground">
               {ORG.name}, {ORG.branch}
             </p>

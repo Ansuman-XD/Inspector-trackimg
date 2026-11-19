@@ -215,3 +215,6 @@
 .gov-sign span { display: block; font-weight: 700; }
 .gov-sign small { font-size: 8.5pt; }
 .gov-foot { text-align: center; font-size: 8pt; margin-top: 10pt; }
+body.help-open .rt-nav-hide { visibility: hidden; }
+.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
