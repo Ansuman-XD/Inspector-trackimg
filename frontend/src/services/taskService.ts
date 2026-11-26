@@ -58,8 +58,8 @@ export function validateAssignment(db: DB, i: AssignInput): { field: string; mes
   //   const c = conflictMessage(db, i.locationId, i.date, i.employeeId);
   //   if (c) errs.push({ field: "conflict", message: c });
   // }
-  if (!i.allowDuplicate && db.tasks.some((t) => t.employeeId === i.employeeId && t.locationId === i.locationId && t.date === i.date && t.status !== "expired"))
-    errs.push({ field: "duplicate", message: "This employee already has a visit to this location on the selected date." });
+  // if (!i.allowDuplicate && db.tasks.some((t) => t.employeeId === i.employeeId && t.locationId === i.locationId && t.date === i.date && t.status !== "expired"))
+  //   errs.push({ field: "duplicate", message: "This employee already has a visit to this location on the selected date." });
   return errs;
 }
 
@@ -71,8 +71,8 @@ export function validatePlan(db: DB, employeeId: string, i: PlanInput, ignoreTas
   if (!loc || loc.status !== "active") return "Selected location is not available.";
   // const c = conflictMessage(db, i.locationId, i.date, employeeId, ignoreTaskId);
   // if (c) return c;
-  if (db.tasks.some((t) => t.id !== ignoreTaskId && t.employeeId === employeeId && t.locationId === i.locationId && t.date === i.date))
-    return "You already have a visit to this location on that date.";
+  // if (db.tasks.some((t) => t.id !== ignoreTaskId && t.employeeId === employeeId && t.locationId === i.locationId && t.date === i.date))
+  //   return "You already have a visit to this location on that date.";
   return null;
 }
 

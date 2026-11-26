@@ -6,7 +6,7 @@ import { useDB } from "@/hooks/useDB";
 import { Panel, StatusBadge, EmptyState } from "@/components/rt/common";
 import { useTaskDrawer } from "@/components/rt/drawerContext";
 import { MISSED, taskStats } from "@/services/taskService";
-import { addDaysISO, fmtDate, fmtLongDate, greeting, todayISO, fmtWindow } from "@/lib/format";
+import { addDaysISO, fmtDate, fmtLongDate, greeting, todayISO, fmtWindow, fmtTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { IMPORTANT_ROW } from "@/lib/status";
 
@@ -149,7 +149,7 @@ const coverage = useMemo(() => {
         {upcoming.length === 0 ? <EmptyState title="No visits scheduled today" action={<Link to="/admin/tasks" className="text-sm font-medium text-primary">Assign a visit</Link>} /> : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-muted/50 text-left text-xs text-muted-foreground"><tr><th className="px-4 py-2 font-medium">Time</th><th className="px-4 py-2 font-medium">Employee</th><th className="px-4 py-2 font-medium">Location</th><th className="px-4 py-2 font-medium">Status</th></tr></thead>
+              <thead className="bg-muted/50 text-left text-xs text-muted-foreground"><tr><th className="px-4 py-2 font-medium">Time</th><th className="px-4 py-2 font-medium">Employee</th><th className="px-4 py-2 font-medium">Location</th><th className="px-4 py-2 font-medium">Status</th><th className="px-4 py-2 font-medium">Check-In</th><th className="px-4 py-2 font-medium">Check-Out</th></tr></thead>
               <tbody>
                 {upcoming.map((t) => (
                   <tr key={t.id} onClick={() => drawer.open(t.id)} className={cn("cursor-pointer border-t hover:bg-muted/40", MISSED.includes(t.status) && "opacity-80", t.important && IMPORTANT_ROW)}>
@@ -157,6 +157,8 @@ const coverage = useMemo(() => {
                     <td className="px-4 py-2.5">{db.employees.find((e) => e.id === t.employeeId)?.name ?? t.employeeId}</td>
                     <td className="px-4 py-2.5">{db.locations.find((l) => l.id === t.locationId)?.name}</td>
                     <td className="px-4 py-2.5"><StatusBadge status={t.status} /></td>
+                    <td className="whitespace-nowrap px-4 py-2.5 tabular">{fmtTime(t.checkIn?.at)}</td>
+<td className="whitespace-nowrap px-4 py-2.5 tabular">{fmtTime(t.checkOut?.at)}</td>
                   </tr>
                 ))}
               </tbody>
