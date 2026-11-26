@@ -6,9 +6,10 @@
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import type { DB, Employee, Task, VisitStage } from "@/types";
-import { fmtDate, fmtDateTime, fmtWindow } from "@/lib/format";
+import { fmtDate, fmtDateTime, fmtWindow, fmtTime } from "@/lib/format";
 import { STATUS_META } from "@/lib/status";
 import { isSelfPlanned } from "@/lib/visitRules";
+import type { ReportingRow } from "@/services/reportService";
 
 type RGB = [number, number, number];
 const NAVY: RGB = [15, 35, 75];
@@ -281,4 +282,34 @@ export function downloadEmployeeVisitReport(db: DB, employee: Employee, tasks: T
     to,
     filename: `inspector-tracking-visit-report-${employee.id.toLowerCase()}.pdf`,
   });
+}
+
+/** Admin > Dashboard > Reporting Time download. */
+export function downloadReportingTimePdf(rows: ReportingRow[], date: string) {
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const ref = `ITS/RT/${date.replace(/-/g, "")}`;
+  let y = header(doc, "EMPLOYEE REPORTING TIME REPORT", ref, fmtDateTime(new Date().toISOString()));
+  y = section(doc, `Reporting Date - ${fmtDate(date)}`, y);
+  autoTable(doc, {
+    ...gridBase,
+    startY: y,
+    head: [["Sr.", "Date", "Employee ID", "Name", "Check-In Time"]],
+    body: rows.length
+      ? rows.map((r, i) => [
+          String(i + 1),
+          fmtDate(date),
+          r.id,
+          r.name,
+          r.firstCheckIn ? fmtTime(r.firstCheckIn) : "Not reported",
+        ])
+      : [["-", "-", "-", "No employees found", "-"]],
+    headStyles: { fillColor: TINT, textColor: NAVY, fontStyle: "bold", halign: "center", fontSize: 8.5 },
+    columnStyles: {
+      0: { cellWidth: 12, halign: "center" },
+      1: { cellWidth: 32 },
+      2: { cellWidth: 32 },
+      4: { cellWidth: 40, halign: "center", fontStyle: "bold" },
+    },
+  });
+  finalize(doc, ref, `inspector-tracking-reporting-time-${date}.pdf`);
 }

@@ -1,5 +1,5 @@
 import type { DB, Employee, Task, VisitLocation } from "@/types";
-import { fmtDate, fmtDateTime } from "@/lib/format";
+import { fmtDate, fmtDateTime, fmtTime } from "@/lib/format";
 import { STATUS_META } from "@/lib/status";
 import { isSelfPlanned } from "@/lib/visitRules";
 import { BRAND } from "@/lib/branding";
@@ -215,5 +215,56 @@ export function exportLocationVisitsCsv(db: DB, location: VisitLocation, filenam
         t.checkOut ? fmtDateTime(t.checkOut.at) : "", stageBy(t.checkOut?.override), stageGps(t, "checkOut") || "No", stagePhoto(t, "checkOut") || "No",
       ];
     }),"Location Visit History"
+  );
+}
+
+/* ---------- Employee reporting time (first check-in of the day) ---------- */
+export interface ReportingRow {
+  id: string;
+  name: string;
+  department: string;
+  /** ISO timestamp of the earliest check-in on that date, or null */
+  firstCheckIn: string | null;
+  visits: number;
+}
+
+/** For one date: every active field employee + the time of their FIRST check-in that day. */
+export function reportingTimes(db: DB, date: string): ReportingRow[] {
+  return db.employees
+    .filter((e) => e.role !== "admin" && !/^ADMIN/i.test(e.id) && e.status === "active")
+    .map((e) => {
+      const mine = db.tasks.filter((t) => t.employeeId === e.id && t.date === date);
+      const times = mine
+        .map((t) => t.checkIn?.at)
+        .filter(Boolean) as string[];
+      times.sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+      return {
+        id: e.id,
+        name: e.name,
+        department: e.department,
+        firstCheckIn: times[0] ?? null,
+        visits: mine.length,
+      };
+    })
+    .sort((a, b) => {
+      if (a.firstCheckIn && b.firstCheckIn)
+        return new Date(a.firstCheckIn).getTime() - new Date(b.firstCheckIn).getTime();
+      if (a.firstCheckIn) return -1;
+      if (b.firstCheckIn) return 1;
+      return a.name.localeCompare(b.name);
+    });
+}
+
+export function exportReportingExcel(rows: ReportingRow[], date: string) {
+  downloadCsv(
+    `inspector-tracking-reporting-time-${date}.xlsx`,
+    ["Date", "Employee ID", "Name", "Check-In Time"],
+    rows.map((r) => [
+      fmtDate(date),
+      r.id,
+      r.name,
+      r.firstCheckIn ? fmtTime(r.firstCheckIn) : "Not reported",
+    ]),
+    "Reporting Time",
   );
 }
