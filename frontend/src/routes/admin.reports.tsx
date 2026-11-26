@@ -24,10 +24,21 @@ export const Route = createFileRoute("/admin/reports")({
 const ALL = "__all";
 const v = (s: string) => (s === ALL ? "" : s);
 
-const emptyFilters = (): ReportFilters => ({
-  from: "", to: "", employeeId: "", department: "", locationId: "", status: "",
-  planning: "", checkInBy: "", checkOutBy: "", important: "",
-});
+const emptyFilters = (): ReportFilters => {
+  const today = todayISO();
+  return {
+    from: today,
+    to: today,
+    employeeId: "",
+    department: "",
+    locationId: "",
+    status: "",
+    planning: "",
+    checkInBy: "",
+    checkOutBy: "",
+    important: "",
+  };
+};
 
 function Reports() {
   const db = useDB();

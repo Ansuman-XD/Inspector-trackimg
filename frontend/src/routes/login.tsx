@@ -54,6 +54,16 @@ function Login() {
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
   const [forgot, setForgot] = useState(false);
+  const [cpUserId, setCpUserId] = useState("");
+const [oldPw, setOldPw] = useState("");
+const [newPw, setNewPw] = useState("");
+const [confirmPw, setConfirmPw] = useState("");
+const [cpErr, setCpErr] = useState("");
+const [cpBusy, setCpBusy] = useState(false);
+const [changePasswordOpen, setChangePasswordOpen] = useState(false);
+const [showOldPw, setShowOldPw] = useState(false);
+const [showNewPw, setShowNewPw] = useState(false);
+const [showConfirmPw, setShowConfirmPw] = useState(false);
 
   useEffect(() => {
     const s = authService.current();
@@ -66,6 +76,79 @@ function Login() {
     }
   }, [navigate]);
 
+//   async function savePasswordChange(e: React.FormEvent) {
+//   e.preventDefault();
+//   setCpErr("");
+//   if (!cpUserId.trim() || !oldPw || !newPw || !confirmPw) {
+//     setCpErr("Fill all fields.");
+//     return;
+//   }
+//   if (newPw !== confirmPw) {
+//     setCpErr("New password and confirm password do not match.");
+//     return;
+//   }
+//   if (newPw.length < 6) {
+//     setCpErr("New password must be at least 6 characters.");
+//     return;
+//   }
+//   setCpBusy(true);
+//   try {
+//     await authService.changePassword(cpUserId, oldPw, newPw, confirmPw);
+//     toast.success("Password changed successfully. Please sign in.");
+//     setForgot(false);
+//     setCpUserId(""); setOldPw(""); setNewPw(""); setConfirmPw("");
+//   } catch (x) {
+//     setCpErr((x as Error).message);
+//   } finally {
+//     setCpBusy(false);
+//   }
+// }
+async function savePasswordChange(e: React.FormEvent) {
+  e.preventDefault();
+  setCpErr("");
+
+  if (!cpUserId.trim() || !oldPw || !newPw || !confirmPw) {
+    setCpErr("Fill all fields.");
+    return;
+  }
+
+  if (newPw !== confirmPw) {
+    setCpErr("New password and confirm password do not match.");
+    return;
+  }
+
+  if (newPw.length < 6) {
+    setCpErr("New password must be at least 6 characters.");
+    return;
+  }
+
+  setCpBusy(true);
+
+  try {
+    await authService.changePassword(
+      cpUserId,
+      oldPw,
+      newPw,
+      confirmPw
+    );
+
+    toast.success(
+      "Password changed successfully. Please sign in."
+    );
+
+    setChangePasswordOpen(false);
+
+    setCpUserId("");
+    setOldPw("");
+    setNewPw("");
+    setConfirmPw("");
+    setCpErr("");
+  } catch (x) {
+    setCpErr((x as Error).message);
+  } finally {
+    setCpBusy(false);
+  }
+}
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setErr("");
@@ -282,18 +365,236 @@ function Login() {
       </main>
 
       <Dialog open={forgot} onOpenChange={setForgot}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Password assistance</DialogTitle>
-            <DialogDescription>
-              Password resets are handled by your system administrator. Contact the Divisional IT
-              cell or your Inspector Tracking System administrator with your Employee ID to have
-              your password reset.
-            </DialogDescription>
-          </DialogHeader>
-          <Button onClick={() => setForgot(false)}>Understood</Button>
-        </DialogContent>
-      </Dialog>
+  <DialogContent className="sm:max-w-[440px]">
+    <DialogHeader>
+      <DialogTitle>Password assistance</DialogTitle>
+
+      <DialogDescription>
+        Choose how you want to recover or change your password.
+      </DialogDescription>
+    </DialogHeader>
+
+    <div className="mt-4 space-y-3">
+      <button
+        type="button"
+        onClick={() => {
+          setForgot(false);
+          setChangePasswordOpen(true);
+          setCpErr("");
+        }}
+        className="w-full rounded-lg border bg-card p-4 text-left transition hover:border-primary hover:bg-muted/50"
+      >
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+            <Lock className="h-5 w-5 text-primary" />
+          </div>
+
+          <div>
+            <p className="font-medium">
+              Change Password
+            </p>
+
+            <p className="mt-1 text-xs text-muted-foreground">
+              Change your password using your User ID and current password.
+            </p>
+          </div>
+        </div>
+      </button>
+
+      <div className="rounded-lg border bg-muted/40 p-3">
+        <p className="text-xs text-muted-foreground">
+          Forgot your current password? Please contact your system
+          administrator or Divisional IT cell for assistance.
+        </p>
+      </div>
+
+      <Button
+        type="button"
+        variant="outline"
+        className="w-full"
+        onClick={() => setForgot(false)}
+      >
+        Cancel
+      </Button>
+    </div>
+  </DialogContent>
+</Dialog>
+<Dialog
+  open={changePasswordOpen}
+  onOpenChange={setChangePasswordOpen}
+>
+  <DialogContent className="sm:max-w-[440px]">
+    <DialogHeader>
+      <DialogTitle>Change Password</DialogTitle>
+
+      <DialogDescription>
+        Enter your current credentials and choose a new password.
+      </DialogDescription>
+    </DialogHeader>
+
+    <form
+      onSubmit={savePasswordChange}
+      className="mt-4 space-y-4"
+    >
+      {/* User ID */}
+      <label className="block space-y-1.5">
+        <span className="text-sm font-medium">
+          User ID / Employee ID
+        </span>
+
+        <div className="relative">
+          <UserIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+
+          <Input
+            value={cpUserId}
+            onChange={(e) => setCpUserId(e.target.value)}
+            placeholder="ADMIN005 / EMP001"
+            className="h-11 pl-9 uppercase"
+            autoComplete="username"
+            autoCapitalize="characters"
+          />
+        </div>
+      </label>
+
+      {/* Old Password */}
+      <label className="block space-y-1.5">
+        <span className="text-sm font-medium">
+          Current Password
+        </span>
+
+        <div className="relative">
+          <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+
+          <Input
+            type={showOldPw ? "text" : "password"}
+            value={oldPw}
+            onChange={(e) => setOldPw(e.target.value)}
+            className="h-11 px-9"
+            autoComplete="current-password"
+          />
+
+          <button
+            type="button"
+            onClick={() => setShowOldPw(!showOldPw)}
+            aria-label="Show current password"
+            className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-muted-foreground"
+          >
+            {showOldPw ? (
+              <EyeOff className="h-4 w-4" />
+            ) : (
+              <Eye className="h-4 w-4" />
+            )}
+          </button>
+        </div>
+      </label>
+
+      {/* New Password */}
+      <label className="block space-y-1.5">
+        <span className="text-sm font-medium">
+          New Password
+        </span>
+
+        <div className="relative">
+          <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+
+          <Input
+            type={showNewPw ? "text" : "password"}
+            value={newPw}
+            onChange={(e) => setNewPw(e.target.value)}
+            className="h-11 px-9"
+            autoComplete="new-password"
+          />
+
+          <button
+            type="button"
+            onClick={() => setShowNewPw(!showNewPw)}
+            aria-label="Show new password"
+            className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-muted-foreground"
+          >
+            {showNewPw ? (
+              <EyeOff className="h-4 w-4" />
+            ) : (
+              <Eye className="h-4 w-4" />
+            )}
+          </button>
+        </div>
+      </label>
+
+      {/* Confirm Password */}
+      <label className="block space-y-1.5">
+        <span className="text-sm font-medium">
+          Confirm New Password
+        </span>
+
+        <div className="relative">
+          <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+
+          <Input
+            type={showConfirmPw ? "text" : "password"}
+            value={confirmPw}
+            onChange={(e) => setConfirmPw(e.target.value)}
+            className="h-11 px-9"
+            autoComplete="new-password"
+          />
+
+          <button
+            type="button"
+            onClick={() => setShowConfirmPw(!showConfirmPw)}
+            aria-label="Show confirm password"
+            className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-muted-foreground"
+          >
+            {showConfirmPw ? (
+              <EyeOff className="h-4 w-4" />
+            ) : (
+              <Eye className="h-4 w-4" />
+            )}
+          </button>
+        </div>
+      </label>
+
+      {/* Error */}
+      {cpErr && (
+        <div
+          role="alert"
+          className="rounded-md border border-danger/30 bg-danger/8 px-3 py-2 text-sm text-danger"
+        >
+          {cpErr}
+        </div>
+      )}
+
+      {/* Buttons */}
+      <div className="flex gap-3 pt-2">
+        <Button
+          type="button"
+          variant="outline"
+          className="flex-1"
+          onClick={() => {
+            setChangePasswordOpen(false);
+            setCpErr("");
+          }}
+          disabled={cpBusy}
+        >
+          Cancel
+        </Button>
+
+        <Button
+          type="submit"
+          className="flex-1"
+          disabled={cpBusy}
+        >
+          {cpBusy ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Saving…
+            </>
+          ) : (
+            "Save Password"
+          )}
+        </Button>
+      </div>
+    </form>
+  </DialogContent>
+</Dialog>
     </div>
   );
 }

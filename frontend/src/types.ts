@@ -20,6 +20,7 @@ export interface Employee {
   designation: string;
   joiningDate: string; // yyyy-mm-dd
   status: EmployeeStatus;
+  role?: Role;
   photo?: string;
   createdAt: string;
 }

@@ -13,6 +13,15 @@ const refreshSchema = z.object({
 const logoutSchema = z.object({
     refreshToken: z.string().optional(),
 });
+const changePasswordSchema = z.object({
+    userId: z.string().min(1),
+    oldPassword: z.string().min(1),
+    newPassword: z.string().min(6),
+    confirmPassword: z.string().min(6),
+}).refine((d) => d.newPassword === d.confirmPassword, {
+    message: "New password and confirm password do not match",
+    path: ["confirmPassword"],
+});
 export const authRoutes = new Hono();
 // POST /auth/login
 authRoutes.post("/login", async (c) => {
@@ -66,6 +75,23 @@ authRoutes.get("/me", requireAuth, async (c) => {
     try {
         const profile = await authService.getMe(user.userId);
         return c.json(profile);
+    }
+    catch (err) {
+        if (err instanceof AuthError) {
+            return c.json({ error: err.message }, err.status);
+        }
+        return c.json({ error: "Internal server error" }, 500);
+    }
+});
+authRoutes.post("/change-password", async (c) => {
+    const body = await c.req.json().catch(() => null);
+    const parsed = changePasswordSchema.safeParse(body);
+    if (!parsed.success) {
+        return c.json({ error: parsed.error.errors[0]?.message || "Invalid input" }, 400);
+    }
+    try {
+        await authService.changePassword(parsed.data.userId, parsed.data.oldPassword, parsed.data.newPassword);
+        return c.json({ success: true, message: "Password changed successfully" });
     }
     catch (err) {
         if (err instanceof AuthError) {

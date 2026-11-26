@@ -12,7 +12,7 @@ import { StageCard } from "./StageCard";
 import { taskService } from "@/services/taskService";
 import { fmtCoord, fmtDate, fmtDateTime, fmtDistance, fmtPhone, fmtWindow } from "@/lib/format";
 import { markerColor } from "@/lib/status";
-import { isSelfPlanned } from "@/lib/visitRules";
+import { isSelfPlanned, coVisitors } from "@/lib/visitRules";
 import { Maximize2, ShieldAlert, Trash2, Star } from "lucide-react";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -86,6 +86,20 @@ async function toggleImportant() {
               <KV k="Phone" v={e ? fmtPhone(e.phone) : "—"} />
             </Section>
             <Section title="Assignment">
+              {(() => {
+  const others = coVisitors(db, t.locationId, t.date, t.id);
+  return others.length > 0 ? (
+    <div className="mt-2 rounded-md border p-2 text-xs">
+      <p className="mb-1 font-medium">Also at this location on {fmtDate(t.date)}</p>
+      {others.map(({ task, employee }) => (
+        <div key={task.id} className="flex items-center justify-between py-0.5">
+          <span>{employee?.name ?? task.employeeId}</span>
+          <StatusBadge status={task.status} />
+        </div>
+      ))}
+    </div>
+  ) : null;
+})()}
               <KV k="Location" v={l.name} />
               <KV k="Address" v={<span className="max-w-[260px] inline-block">{l.address}</span>} />
               <KV k="Window" v={`${fmtWindow(t)}`} />

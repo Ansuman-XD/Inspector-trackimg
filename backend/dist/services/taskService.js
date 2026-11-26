@@ -1,8 +1,8 @@
 import crypto from "crypto";
-import { taskRepository } from "../repositories/taskRepository.js";
+import { taskRepository, } from "../repositories/taskRepository.js";
 import { employeeRepository } from "../repositories/employeeRepository.js";
 import { locationRepository } from "../repositories/locationRepository.js";
-import { haversine, todayIST, isPastCutoff, isPlannedBeforeCutoff } from "../lib/geo.js";
+import { haversine, todayIST, isPastCutoff, isPlannedBeforeCutoff, } from "../lib/geo.js";
 import { ServiceError } from "../lib/errors.js";
 import { config } from "../config.js";
 import { photoRepository } from "../repositories/photoRepository.js";
@@ -36,15 +36,23 @@ export const taskService = {
             throw new ServiceError("End time must be after start time.", 400);
         }
         // Rule 6: Location Conflict check (Only 1 active visit per location per date in database)
-        const conflict = await taskRepository.findConflictingTask(input.locationId, input.date);
-        if (conflict) {
-            if (conflict.employeeId !== input.employeeId) {
-                throw new ServiceError(`This location is already scheduled for ${conflict.employeeName} (${conflict.employeeId}) on ${input.date}. Please select another date or location.`, 409);
-            }
-            else {
-                throw new ServiceError("This employee already has an active visit scheduled for this location on the selected date.", 409);
-            }
-        }
+        // const conflict = await taskRepository.findConflictingTask(
+        //   input.locationId,
+        //   input.date,
+        // );
+        // if (conflict) {
+        //   if (conflict.employeeId !== input.employeeId) {
+        //     throw new ServiceError(
+        //       `This location is already scheduled for ${conflict.employeeName} (${conflict.employeeId}) on ${input.date}. Please select another date or location.`,
+        //       409,
+        //     );
+        //   } else {
+        //     throw new ServiceError(
+        //       "This employee already has an active visit scheduled for this location on the selected date.",
+        //       409,
+        //     );
+        //   }
+        // }
         // Duplicate check for same employee unless allowed
         if (!input.allowDuplicate) {
             const dup = await taskRepository.findDuplicateTask(input.employeeId, input.locationId, input.date);
@@ -78,6 +86,47 @@ export const taskService = {
         return created;
     },
     // 2. Employee Self-Planning
+    // async plan(employeeId: string, input: PlanTaskInput): Promise<TaskRecord> {
+    // if (!input.date) throw new ServiceError("Select a visit date.", 400);
+    // const today = todayIST();
+    // if (input.date < today)
+    //   throw new ServiceError("Visit date cannot be in the past.", 400);
+    // if (!input.locationId) throw new ServiceError("Select a location.", 400);
+    // const loc = await locationRepository.findById(input.locationId);
+    // if (!loc || loc.status !== "active")
+    //   throw new ServiceError("Selected location is not available.", 400);
+    // // Rule 6: Location Conflict check
+    // // Rule 6: Location Conflict check (Only 1 active visit per location per date in database)
+    // const conflict = await taskRepository.findConflictingTask(
+    //   input.locationId,
+    //   input.date,
+    // );
+    // if (conflict) {
+    //   if (conflict.employeeId !== employeeId) {
+    //     throw new ServiceError(
+    //       `This location is already scheduled for ${conflict.employeeName} (${conflict.employeeId}) on ${input.date}. Please select another date or location.`,
+    //       409,
+    //     );
+    //   } else {
+    //     throw new ServiceError(
+    //       "You already have an active visit scheduled for this location on that date.",
+    //       409,
+    //     );
+    //   }
+    // }
+    // Self-duplicate check
+    // const dup = await taskRepository.findDuplicateTask(
+    //   employeeId,
+    //   input.locationId,
+    //   input.date,
+    // );
+    // if (dup) {
+    //   throw new ServiceError(
+    //     "You already have a visit to this location on that date.",
+    //     409,
+    //   );
+    // }
+    // 2. Employee Self-Planning
     async plan(employeeId, input) {
         if (!input.date)
             throw new ServiceError("Select a visit date.", 400);
@@ -89,18 +138,8 @@ export const taskService = {
         const loc = await locationRepository.findById(input.locationId);
         if (!loc || loc.status !== "active")
             throw new ServiceError("Selected location is not available.", 400);
-        // Rule 6: Location Conflict check
-        // Rule 6: Location Conflict check (Only 1 active visit per location per date in database)
-        const conflict = await taskRepository.findConflictingTask(input.locationId, input.date);
-        if (conflict) {
-            if (conflict.employeeId !== employeeId) {
-                throw new ServiceError(`This location is already scheduled for ${conflict.employeeName} (${conflict.employeeId}) on ${input.date}. Please select another date or location.`, 409);
-            }
-            else {
-                throw new ServiceError("You already have an active visit scheduled for this location on that date.", 409);
-            }
-        }
-        // Self-duplicate check
+        // Other employees at this location are allowed.
+        // Only block if THIS employee already has a visit there on that date.
         const dup = await taskRepository.findDuplicateTask(employeeId, input.locationId, input.date);
         if (dup) {
             throw new ServiceError("You already have a visit to this location on that date.", 409);
@@ -141,16 +180,36 @@ export const taskService = {
         if (!["assigned", "pending"].includes(task.status)) {
             throw new ServiceError("This visit has already started and can no longer be edited.", 400);
         }
+        // const loc = await locationRepository.findById(input.locationId);
+        // if (!loc || loc.status !== "active") {
+        //   throw new ServiceError("Selected location is not available.", 400);
+        // }
+        // const conflict = await taskRepository.findConflictingTask(
+        //   input.locationId,
+        //   input.date,
+        //   id,
+        // );
+        // if (conflict && conflict.employeeId !== employeeId) {
+        //   throw new ServiceError(
+        //     `This location is already scheduled for ${conflict.employeeName} (${conflict.employeeId}) on ${input.date}. Please select another date or location.`,
+        //     409,
+        //   );
+        // }
+        // const locChanged = input.locationId !== task.locationId;
         const loc = await locationRepository.findById(input.locationId);
         if (!loc || loc.status !== "active") {
             throw new ServiceError("Selected location is not available.", 400);
         }
-        const conflict = await taskRepository.findConflictingTask(input.locationId, input.date, id);
-        if (conflict && conflict.employeeId !== employeeId) {
-            throw new ServiceError(`This location is already scheduled for ${conflict.employeeName} (${conflict.employeeId}) on ${input.date}. Please select another date or location.`, 409);
+        // Another employee at this location is now allowed.
+        // Only block if THIS employee already has another visit there on that date.
+        const dup = await taskRepository.findDuplicateTask(employeeId, input.locationId, input.date, id);
+        if (dup) {
+            throw new ServiceError("You already have a visit to this location on that date.", 409);
         }
         const locChanged = input.locationId !== task.locationId;
-        const keepHistory = locChanged && isPastCutoff(task.scheduledDate) && isPlannedBeforeCutoff(task.createdAt, task.scheduledDate);
+        const keepHistory = locChanged &&
+            isPastCutoff(task.scheduledDate) &&
+            isPlannedBeforeCutoff(task.createdAt, task.scheduledDate);
         if (keepHistory) {
             // Archive original to task_history as 'amended'
             await taskRepository.createHistory({
@@ -279,7 +338,9 @@ export const taskService = {
                 deviceTime: new Date(input.deviceTime),
                 photoData: input.photo?.buffer || null,
                 photoMime: input.photo?.mime || null,
-                photoSha256: input.photo ? crypto.createHash("sha256").update(input.photo.buffer).digest("hex") : null,
+                photoSha256: input.photo
+                    ? crypto.createHash("sha256").update(input.photo.buffer).digest("hex")
+                    : null,
             });
             try {
                 await taskRepository.update(taskId, { status: "verification_failed" });
@@ -306,7 +367,9 @@ export const taskService = {
                 deviceTime: new Date(input.deviceTime),
                 photoData: input.photo?.buffer || null,
                 photoMime: input.photo?.mime || null,
-                photoSha256: input.photo ? crypto.createHash("sha256").update(input.photo.buffer).digest("hex") : null,
+                photoSha256: input.photo
+                    ? crypto.createHash("sha256").update(input.photo.buffer).digest("hex")
+                    : null,
             });
             try {
                 await taskRepository.update(taskId, { status: "verification_failed" });
@@ -324,7 +387,10 @@ export const taskService = {
         let photoSha256 = null;
         let photoSize = null;
         if (input.photo) {
-            photoSha256 = crypto.createHash("sha256").update(input.photo.buffer).digest("hex");
+            photoSha256 = crypto
+                .createHash("sha256")
+                .update(input.photo.buffer)
+                .digest("hex");
             photoSize = input.photo.buffer.length;
         }
         const stageId = `STG-${crypto.randomUUID()}`;
@@ -357,7 +423,9 @@ export const taskService = {
         //   });
         // }
         if (input.photo) {
-            const days = task.isImportant ? config.importantPhotoRetentionDays : config.photoRetentionDays;
+            const days = task.isImportant
+                ? config.importantPhotoRetentionDays
+                : config.photoRetentionDays;
             const expiresAt = new Date(serverDate.getTime() + days * 24 * 60 * 60 * 1000);
             await taskRepository.createStagePhoto({
                 id: `PH-${crypto.randomUUID()}`,
@@ -371,7 +439,9 @@ export const taskService = {
         const newStatus = input.type === "check_in" ? "checked_in" : "verified";
         const patch = {
             status: newStatus,
-            ...(input.type === "check_in" ? { reachedAt: serverDate } : { verifiedAt: serverDate }),
+            ...(input.type === "check_in"
+                ? { reachedAt: serverDate }
+                : { verifiedAt: serverDate }),
         };
         await taskRepository.update(taskId, patch);
         // Audit log
@@ -444,8 +514,12 @@ export const taskService = {
             throw new ServiceError("Visit record not found.", 404);
         if (task.isImportant === important)
             return task;
-        const updated = await taskRepository.update(taskId, { isImportant: important });
-        await photoRepository.setExpiryForTask(taskId, important ? config.importantPhotoRetentionDays : config.photoRetentionDays);
+        const updated = await taskRepository.update(taskId, {
+            isImportant: important,
+        });
+        await photoRepository.setExpiryForTask(taskId, important
+            ? config.importantPhotoRetentionDays
+            : config.photoRetentionDays);
         await taskRepository.createHistory({
             id: `HST-${crypto.randomUUID()}`,
             taskId,

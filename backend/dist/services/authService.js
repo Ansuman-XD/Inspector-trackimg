@@ -1,6 +1,6 @@
 import crypto from "crypto";
 import { employeeRepository } from "../repositories/employeeRepository.js";
-import { verifyPassword, hashToken } from "../lib/crypto.js";
+import { hashPassword, verifyPassword, hashToken } from "../lib/crypto.js";
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken, } from "../lib/jwt.js";
 import { config } from "../config.js";
 export class AuthError extends Error {
@@ -124,5 +124,26 @@ export const authService = {
         }
         const { passwordHash, ...rest } = employee;
         return rest;
+    },
+    async changePassword(badgeIdInput, oldPassword, newPassword) {
+        const badgeId = badgeIdInput.trim().toUpperCase();
+        if (!newPassword || newPassword.length < 6) {
+            throw new AuthError("New password must be at least 6 characters.", 400);
+        }
+        const employee = await employeeRepository.findByBadgeId(badgeId);
+        if (!employee) {
+            throw new AuthError("Invalid User ID or password.", 401);
+        }
+        const ok = await verifyPassword(employee.passwordHash, oldPassword);
+        if (!ok) {
+            throw new AuthError("Invalid User ID or old password.", 401);
+        }
+        const passwordHash = await hashPassword(newPassword);
+        await employeeRepository.update(employee.id, {
+            passwordHash,
+            mustChangePw: false,
+        });
+        // optional: revoke all refresh tokens for this user
+        await employeeRepository.revokeAllUserRefreshTokens(employee.id);
     },
 };
