@@ -13,11 +13,17 @@ export const effStart = (t: Pick<Task, "startTime">) => t.startTime || "00:00";
 export const effEnd = (t: Pick<Task, "endTime">) => t.endTime || "23:59";
 
 /** Another employee already holds this location on this date. */
-export function locationConflict(db: DB, locationId: string, date: string, employeeId: string, ignoreTaskId?: string) {
-  const t = db.tasks.find((x) => x.locationId === locationId && x.date === date && x.employeeId !== employeeId && x.id !== ignoreTaskId);
-  if (!t) return null;
-  const e = db.employees.find((x) => x.id === t.employeeId);
-  return { task: t, employeeName: e?.name ?? t.employeeId, employeeId: t.employeeId };
+// export function locationConflict(db: DB, locationId: string, date: string, employeeId: string, ignoreTaskId?: string) {
+//   const t = db.tasks.find((x) => x.locationId === locationId && x.date === date && x.employeeId !== employeeId && x.id !== ignoreTaskId);
+//   if (!t) return null;
+//   const e = db.employees.find((x) => x.id === t.employeeId);
+//   return { task: t, employeeName: e?.name ?? t.employeeId, employeeId: t.employeeId };
+// }
+/** Everyone else scheduled at this location on this date (informational only). */
+export function coVisitors(db: DB, locationId: string, date: string, ignoreTaskId?: string) {
+  return db.tasks
+    .filter((x) => x.locationId === locationId && x.date === date && x.id !== ignoreTaskId)
+    .map((x) => ({ task: x, employee: db.employees.find((e) => e.id === x.employeeId) }));
 }
 
 /** True when it is today in IST and 9:00 AM has passed. */

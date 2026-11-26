@@ -61,7 +61,22 @@ export const authService = {
 
     return session;
   },
-
+async changePassword(
+  userId: string,
+  oldPassword: string,
+  newPassword: string,
+  confirmPassword: string
+): Promise<void> {
+  await apiClient("/auth/change-password", {
+    method: "POST",
+    body: JSON.stringify({
+      userId: userId.trim().toUpperCase(),
+      oldPassword,
+      newPassword,
+      confirmPassword,
+    }),
+  });
+},
   async logout(): Promise<void> {
     const refreshToken = tokenStorage.getRefreshToken();
     tokenStorage.clearTokens();

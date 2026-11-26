@@ -3,7 +3,7 @@ import { storage, uid } from "./storageService";
 import { makeActivity, makeNotification } from "./notificationService";
 import { fmtDate, fmtWindow, taskDateTime, todayISO } from "@/lib/format";
 import { haversine, type GpsFix } from "./verificationService";
-import { blockingVisit, currentStage, DEFAULT_RADIUS, effEnd, effStart, isSelfPlanned, locationConflict, pastCutoff, plannedBeforeCutoff } from "@/lib/visitRules";
+import { blockingVisit, currentStage, DEFAULT_RADIUS, effEnd, effStart, isSelfPlanned, pastCutoff, plannedBeforeCutoff } from "@/lib/visitRules";
 import { apiClient } from "./apiClient";
 
 export interface AssignInput {
@@ -34,10 +34,10 @@ const names = (db: DB, t: Pick<Task, "employeeId" | "locationId">) => ({
 
 export const radiusOf = (db: DB, locationId: string) => db.locations.find((l) => l.id === locationId)?.verificationRadius ?? DEFAULT_RADIUS;
 
-function conflictMessage(db: DB, locationId: string, date: string, employeeId: string, ignore?: string) {
-  const c = locationConflict(db, locationId, date, employeeId, ignore);
-  return c ? `This location is already scheduled for ${c.employeeName} (${c.employeeId}) on ${fmtDate(date)}. Please select another date or location.` : null;
-}
+// function conflictMessage(db: DB, locationId: string, date: string, employeeId: string, ignore?: string) {
+//   const c = locationConflict(db, locationId, date, employeeId, ignore);
+//   return c ? `This location is already scheduled for ${c.employeeName} (${c.employeeId}) on ${fmtDate(date)}. Please select another date or location.` : null;
+// }
 
 export function validateAssignment(db: DB, i: AssignInput): { field: string; message: string }[] {
   const errs: { field: string; message: string }[] = [];
@@ -54,10 +54,10 @@ export function validateAssignment(db: DB, i: AssignInput): { field: string; mes
   if (i.endTime && !/^\d{2}:\d{2}$/.test(i.endTime)) errs.push({ field: "endTime", message: "Enter a valid end time." });
   else if (i.startTime && i.endTime && i.endTime <= i.startTime) errs.push({ field: "endTime", message: "End time must be after start time." });
   if (i.date && i.endTime && taskDateTime(i.date, i.endTime) < new Date()) errs.push({ field: "endTime", message: "The visit window has already ended." });
-  if (i.locationId && i.date && i.employeeId) {
-    const c = conflictMessage(db, i.locationId, i.date, i.employeeId);
-    if (c) errs.push({ field: "conflict", message: c });
-  }
+  // if (i.locationId && i.date && i.employeeId) {
+  //   const c = conflictMessage(db, i.locationId, i.date, i.employeeId);
+  //   if (c) errs.push({ field: "conflict", message: c });
+  // }
   if (!i.allowDuplicate && db.tasks.some((t) => t.employeeId === i.employeeId && t.locationId === i.locationId && t.date === i.date && t.status !== "expired"))
     errs.push({ field: "duplicate", message: "This employee already has a visit to this location on the selected date." });
   return errs;
@@ -69,8 +69,8 @@ export function validatePlan(db: DB, employeeId: string, i: PlanInput, ignoreTas
   const loc = db.locations.find((l) => l.id === i.locationId);
   if (!i.locationId) return "Select a location.";
   if (!loc || loc.status !== "active") return "Selected location is not available.";
-  const c = conflictMessage(db, i.locationId, i.date, employeeId, ignoreTaskId);
-  if (c) return c;
+  // const c = conflictMessage(db, i.locationId, i.date, employeeId, ignoreTaskId);
+  // if (c) return c;
   if (db.tasks.some((t) => t.id !== ignoreTaskId && t.employeeId === employeeId && t.locationId === i.locationId && t.date === i.date))
     return "You already have a visit to this location on that date.";
   return null;

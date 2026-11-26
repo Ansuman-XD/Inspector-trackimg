@@ -63,7 +63,15 @@ function Dashboard() {
   }), [db.tasks, activeEmp, today]);
 
   const upcoming = [...todays].sort((a, b) => a.startTime.localeCompare(b.startTime));
-
+const coverage = useMemo(() => {
+  const m = new Map<string, typeof todays>();
+  for (const t of todays) m.set(t.locationId, [...(m.get(t.locationId) ?? []), t]);
+  return [...m].map(([id, ts]) => ({
+    name: db.locations.find((l) => l.id === id)?.name ?? id,
+    total: ts.length,
+    done: ts.filter((t) => t.status === "verified").length,
+  })).sort((a, b) => b.total - a.total);
+}, [todays, db.locations]);
   return (
     <div>
       <div className="mb-6 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
@@ -156,6 +164,18 @@ function Dashboard() {
           </div>
         )}
       </Panel>
+      <Panel title="Location Coverage · today" className="mt-4" bodyClass="p-0">
+  {coverage.length === 0 ? <EmptyState title="No locations scheduled today" /> : (
+    <ul className="divide-y">
+      {coverage.map((c) => (
+        <li key={c.name} className="flex items-center justify-between px-4 py-2.5 text-sm">
+          <span className="font-medium">{c.name}</span>
+          <span className="text-muted-foreground tabular">{c.done}/{c.total} inspectors completed</span>
+        </li>
+      ))}
+    </ul>
+  )}
+</Panel>
     </div>
   );
 }

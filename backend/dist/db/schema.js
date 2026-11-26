@@ -1,5 +1,4 @@
 import { pgTable, text, integer, doublePrecision, timestamp, boolean, uniqueIndex, index, customType, jsonb, } from "drizzle-orm/pg-core";
-import { sql } from "drizzle-orm";
 // Custom PostgreSQL bytea type for binary photo storage
 export const bytea = customType({
     dataType() {
@@ -148,9 +147,10 @@ export const tasks = pgTable("tasks", {
         .notNull(),
 }, (table) => [
     // Partial unique index: 1 active visit per location per date
-    uniqueIndex("uniq_location_date_active")
-        .on(table.locationId, table.scheduledDate)
-        .where(sql `${table.status} != 'cancelled'`),
+    // uniqueIndex("uniq_location_date_active")
+    //   .on(table.locationId, table.scheduledDate)
+    //   .where(sql`${table.status} != 'cancelled'`),
+    index("idx_tasks_location_date").on(table.locationId, table.scheduledDate),
     index("idx_tasks_employee_date").on(table.employeeId, table.scheduledDate),
     index("idx_tasks_scheduled_date").on(table.scheduledDate),
     index("idx_tasks_status").on(table.status),

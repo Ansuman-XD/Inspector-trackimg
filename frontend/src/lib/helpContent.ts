@@ -34,7 +34,7 @@ export const ADMIN_HELP: HelpSection[] = [
     title: "Operations",
     items: [
       { q: "How do I assign a visit?", a: "Assign Visit → pick Employee → Location → Schedule (date, optional start/end time, priority) → Instructions → Review → Assign Visit. The employee is notified." },
-      { q: "Why do I get 'location already scheduled'?", a: "A location can be booked by only one employee per date. Choose another date or location." },
+      { q: "Can two employees visit the same location on the same day?", a: "Yes. Assign each employee separately. The same employee can't be booked twice at one location on one date unless you tick 'Allow a repeat visit'." },
       { q: "How do I track visits live?", a: "Open Visit Monitoring. Filter by date, employee, location or status, or search by visit ID. Click a row to open full details." },
       { q: "What are the visit statuses?", a: "Assigned, In Progress, Location Reached, Checked In, Completed, Pending, Not Visited, Verification Failed, Expired and Cancelled." },
       { q: "What does the Visit Map show?", a: "Locations for the chosen date, coloured by status: green verified, yellow in progress or pending, red missed or failed, blue assigned. A line shows the distance from the site to where the employee verified." },
@@ -74,7 +74,7 @@ export const EMPLOYEE_HELP: HelpSection[] = [
     title: "Planning a visit",
     items: [
       { q: "How do I plan my own visit?", a: "Tasks → Plan a Visit. Choose a date and an active location, add optional notes, and save." },
-      { q: "Why can't I choose a location?", a: "A location can be booked by only one employee per date, and you can't book the same location twice on one date." },
+      { q: "Can I plan a location another inspector is visiting?", a: "Yes. Several inspectors can visit the same site on the same day. You just can't book the same location twice yourself on one date." },
       { q: "Can I edit or delete a planned visit?", a: "Yes, but only your own self-planned visits that have not started. Open the visit and tap Edit or Delete. Visits assigned by Admin can only be deleted by Admin." },
     //   { q: "What is the 9:00 AM rule?", a: "After 9:00 AM (IST) on the visit day, deleting a plan marks it Cancelled and keeps it in history. Changing the location keeps your original plan in history." },
     ],

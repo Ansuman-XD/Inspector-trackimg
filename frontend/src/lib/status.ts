@@ -27,3 +27,10 @@ export function markerColor(s: TaskStatus) {
 /** Row style for admin tables when a visit is marked important. */
 export const IMPORTANT_ROW =
   "bg-warning/10 hover:bg-warning/20 shadow-[inset_4px_0_0_var(--warning)]";
+
+export function aggregateColor(statuses: TaskStatus[]) {
+  if (statuses.every((s) => s === "verified")) return "var(--success)";
+  if (statuses.some((s) => ["in_progress", "location_reached", "checked_in", "pending"].includes(s))) return "var(--warning)";
+  if (statuses.some((s) => ["not_visited", "verification_failed", "expired"].includes(s))) return "var(--danger)";
+  return "var(--info)";
+}

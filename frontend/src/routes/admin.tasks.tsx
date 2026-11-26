@@ -13,6 +13,7 @@ import { taskService, validateAssignment, type AssignInput } from "@/services/ta
 import { fmtDate, fmtTime, todayISO, fmtWindow } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { Priority, Task } from "@/types";
+import {coVisitors} from "@/lib/visitRules";
 
 export const Route = createFileRoute("/admin/tasks")({
   head: () => ({ meta: [{ title: "Assign Visit — Inspector Tracking System" }, { name: "description", content: "Assign scheduled field visits to employees." }, { property: "og:title", content: "Assign Visit — Inspector Tracking System" }, { property: "og:description", content: "Assign scheduled field visits to employees." }] }),
@@ -45,7 +46,7 @@ function AssignVisit() {
   const emp = db.employees.find((e) => e.id === d.employeeId);
   const loc = db.locations.find((l) => l.id === d.locationId);
 
-  const emps = useMemo(() => db.employees.filter((e) => e.status === "active" && (!q || (e.name + e.id + e.department).toLowerCase().includes(q.toLowerCase()))), [db.employees, q]);
+  const emps = useMemo(() => db.employees.filter((e) => e.status === "active" && e.role !== "admin" && (!q || (e.name + e.id + e.department).toLowerCase().includes(q.toLowerCase()))), [db.employees, q]);
   const locs = useMemo(() => db.locations.filter((l) => l.status === "active" && (!q || (l.name + l.address + l.type).toLowerCase().includes(q.toLowerCase()))), [db.locations, q]);
   const recent = [...db.tasks].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 8);
 
@@ -133,13 +134,30 @@ function AssignVisit() {
             )}
             {step === 1 && (
               <div className="grid gap-2 sm:grid-cols-2">
-                {locs.map((l) => (
+                {/* {locs.map((l) => (
                   <button key={l.id} onClick={() => set("locationId", l.id)} className={cn("rounded-lg border p-3 text-left transition", d.locationId === l.id ? "border-primary bg-accent/50 ring-1 ring-primary" : "hover:bg-muted/40")}>
                     <span className="block font-medium">{l.name}</span>
                     <span className="block text-xs text-muted-foreground">{l.type}</span>
                     <span className="mt-1 block truncate text-xs text-muted-foreground">{l.address}</span>
                   </button>
-                ))}
+                ))} */}
+
+                {locs.map((l) => {
+  const others = coVisitors(db, l.id, d.date);
+  return (
+    <button key={l.id} onClick={() => set("locationId", l.id)} className={cn("rounded-lg border p-3 text-left transition", d.locationId === l.id ? "border-primary bg-accent/50 ring-1 ring-primary" : "hover:bg-muted/40")}>
+      <span className="block font-medium">{l.name}</span>
+      <span className="block text-xs text-muted-foreground">{l.type}</span>
+      <span className="mt-1 block truncate text-xs text-muted-foreground">{l.address}</span>
+      {others.length > 0 && (
+        <span className="mt-1.5 inline-block rounded bg-info/10 px-1.5 py-0.5 text-[11px] font-medium text-info">
+          {others.length} inspector{others.length > 1 ? "s" : ""} already on {fmtDate(d.date)}:
+          {" "}{others.map((o) => o.employee?.name.split(" ")[0]).join(", ")}
+        </span>
+      )}
+    </button>
+  );
+})}
               </div>
             )}
             {step === 2 && (
@@ -151,7 +169,7 @@ function AssignVisit() {
                   <div className="grid grid-cols-3 gap-1 rounded-md border p-1">{(["high", "medium", "low"] as Priority[]).map((p) => <button key={p} onClick={() => set("priority", p)} className={cn("h-8 rounded text-xs font-medium capitalize", d.priority === p ? "bg-primary text-primary-foreground" : "hover:bg-muted")}>{p}</button>)}</div>
                 </div>
                 <label className="flex items-center gap-2 text-sm sm:col-span-3"><Checkbox checked={!!d.allowDuplicate} onCheckedChange={(v) => set("allowDuplicate", !!v)} />Allow a repeat visit to the same location on this date</label>
-                <p className="text-xs text-muted-foreground sm:col-span-3">All times are Indian Standard Time (IST). Leave times blank to allow the visit any time that day. A location can be booked by only one employee per date.</p>
+                <p className="text-xs text-muted-foreground sm:col-span-3">All times are Indian Standard Time (IST). Leave times blank to allow the visit any time that day. Several employees can be assigned to the same location on the same date.</p>
               </div>
             )}
             {step === 3 && (

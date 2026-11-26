@@ -25,4 +25,5 @@ export declare const authService: {
     }>;
     logout(refreshTokenInput: string): Promise<void>;
     getMe(userId: string): Promise<Omit<EmployeeRecord, "passwordHash">>;
+    changePassword(badgeIdInput: string, oldPassword: string, newPassword: string): Promise<void>;
 };

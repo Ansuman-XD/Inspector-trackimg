@@ -175,6 +175,7 @@ export const syncService = {
             designation: e.designation || "",
             joiningDate: e.joiningDate || "",
             status: e.status || (e.active ? "active" : "inactive"),
+            role: e.role || "employee",
             photo: e.photo || undefined,
             createdAt: e.createdAt || new Date().toISOString(),
           }));
