@@ -35,6 +35,7 @@ export const ADMIN_HELP: HelpSection[] = [
     items: [
       { q: "How do I assign a visit?", a: "Assign Visit → pick Employee → Location → Schedule (date, optional start/end time, priority) → Instructions → Review → Assign Visit. The employee is notified." },
       { q: "Can two employees visit the same location on the same day?", a: "Yes. Assign each employee separately. The same employee can't be booked twice at one location on one date unless you tick 'Allow a repeat visit'." },
+      { q: "Can the same employee visit one location more than once a day?", a: "Yes. Assign the visit again with a different time window. The employee must check out of the first visit before checking in to the next." },
       { q: "How do I track visits live?", a: "Open Visit Monitoring. Filter by date, employee, location or status, or search by visit ID. Click a row to open full details." },
       { q: "What are the visit statuses?", a: "Assigned, In Progress, Location Reached, Checked In, Completed, Pending, Not Visited, Verification Failed, Expired and Cancelled." },
       { q: "What does the Visit Map show?", a: "Locations for the chosen date, coloured by status: green verified, yellow in progress or pending, red missed or failed, blue assigned. A line shows the distance from the site to where the employee verified." },

@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Download, RotateCcw } from "lucide-react";
+import { Download, RotateCcw, FileSpreadsheet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { EmptyState } from "@/components/rt/common";
@@ -11,6 +11,7 @@ import { MISSED, taskStats } from "@/services/taskService";
 import { downloadEmployeeVisitReport } from "@/lib/pdf";
 import { taskDateTime, todayISO } from "@/lib/format";
 import { effEnd } from "@/lib/visitRules";
+import { exportVisitsCsv } from "@/services/reportService";
 
 export const Route = createFileRoute("/employee/visits")({
   head: () => ({ meta: [{ title: "My Visits — Inspector Tracking System" }, { name: "description", content: "History of completed and missed visits." }] }),
@@ -49,10 +50,15 @@ function Visits() {
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">My Visits</h1>
         {employee && (
-          <Button size="sm" variant="outline" onClick={() => downloadEmployeeVisitReport(db, employee, past, from, to)} disabled={past.length === 0}>
-            <Download className="mr-1.5 h-4 w-4" />Download Report
-          </Button>
-        )}
+  <div className="flex gap-2">
+    <Button size="sm" variant="outline" onClick={() => downloadEmployeeVisitReport(db, employee, past, from, to)} disabled={past.length === 0}>
+      <Download className="mr-1.5 h-4 w-4" />PDF
+    </Button>
+    <Button size="sm" variant="outline" onClick={() => exportVisitsCsv(db, past, `inspector-tracking-my-visits-${employee.id.toLowerCase()}.xlsx`)} disabled={past.length === 0}>
+      <FileSpreadsheet className="mr-1.5 h-4 w-4" />Excel
+    </Button>
+  </div>
+)}
       </div>
      {/* Filter bar */}
 <div className="rounded-xl border bg-card p-4 shadow-[var(--shadow-card)] space-y-3">

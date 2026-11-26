@@ -327,36 +327,7 @@ async function savePasswordChange(e: React.FormEvent) {
               </Button>
             </form>
 
-            {/* <div className="mt-5 rounded-lg border bg-card p-3 text-xs text-muted-foreground">
-              <p className="mb-2 font-semibold text-foreground">Presentation accounts</p>
-
-              <div className="grid grid-cols-2 gap-y-1 font-mono">
-                <button
-                  type="button"
-                  className="text-left hover:text-foreground"
-                  onClick={() => {
-                    setRole("admin");
-                    setId("ADMIN001");
-                    setPw("admin123");
-                  }}
-                >
-                  ADMIN001 / admin123
-                </button>
-                <span>Administrator</span>
-                <button
-                  type="button"
-                  className="text-left hover:text-foreground"
-                  onClick={() => {
-                    setRole("employee");
-                    setId("EMP001");
-                    setPw("employee123");
-                  }}
-                >
-                  EMP001 / employee123
-                </button>
-                <span>Rajesh Kumar</span>
-              </div>
-            </div> */}
+           
             <p className="mt-3 text-center text-[11px] text-muted-foreground">
               {ORG.name}, {ORG.branch}
             </p>

@@ -54,12 +54,19 @@ export const taskService = {
         //   }
         // }
         // Duplicate check for same employee unless allowed
-        if (!input.allowDuplicate) {
-            const dup = await taskRepository.findDuplicateTask(input.employeeId, input.locationId, input.date);
-            if (dup) {
-                throw new ServiceError("This employee already has a visit to this location on the selected date.", 409);
-            }
-        }
+        // if (!input.allowDuplicate) {
+        //   const dup = await taskRepository.findDuplicateTask(
+        //     input.employeeId,
+        //     input.locationId,
+        //     input.date,
+        //   );
+        //   if (dup) {
+        //     throw new ServiceError(
+        //       "This employee already has a visit to this location on the selected date.",
+        //       409,
+        //     );
+        //   }
+        // }
         const id = `VST-${Date.now().toString(36).toUpperCase()}`;
         const created = await taskRepository.create({
             id,
@@ -140,10 +147,17 @@ export const taskService = {
             throw new ServiceError("Selected location is not available.", 400);
         // Other employees at this location are allowed.
         // Only block if THIS employee already has a visit there on that date.
-        const dup = await taskRepository.findDuplicateTask(employeeId, input.locationId, input.date);
-        if (dup) {
-            throw new ServiceError("You already have a visit to this location on that date.", 409);
-        }
+        // const dup = await taskRepository.findDuplicateTask(
+        //   employeeId,
+        //   input.locationId,
+        //   input.date,
+        // );
+        // if (dup) {
+        //   throw new ServiceError(
+        //     "You already have a visit to this location on that date.",
+        //     409,
+        //   );
+        // }
         const id = `VST-${Date.now().toString(36).toUpperCase()}`;
         const created = await taskRepository.create({
             id,
@@ -202,10 +216,10 @@ export const taskService = {
         }
         // Another employee at this location is now allowed.
         // Only block if THIS employee already has another visit there on that date.
-        const dup = await taskRepository.findDuplicateTask(employeeId, input.locationId, input.date, id);
-        if (dup) {
-            throw new ServiceError("You already have a visit to this location on that date.", 409);
-        }
+        // const dup = await taskRepository.findDuplicateTask(employeeId, input.locationId, input.date, id);
+        // if (dup) {
+        //   throw new ServiceError("You already have a visit to this location on that date.", 409);
+        // }
         const locChanged = input.locationId !== task.locationId;
         const keepHistory = locChanged &&
             isPastCutoff(task.scheduledDate) &&

@@ -168,8 +168,8 @@ function AssignVisit() {
                 <div className="space-y-1.5"><span className="text-sm font-medium">Priority</span>
                   <div className="grid grid-cols-3 gap-1 rounded-md border p-1">{(["high", "medium", "low"] as Priority[]).map((p) => <button key={p} onClick={() => set("priority", p)} className={cn("h-8 rounded text-xs font-medium capitalize", d.priority === p ? "bg-primary text-primary-foreground" : "hover:bg-muted")}>{p}</button>)}</div>
                 </div>
-                <label className="flex items-center gap-2 text-sm sm:col-span-3"><Checkbox checked={!!d.allowDuplicate} onCheckedChange={(v) => set("allowDuplicate", !!v)} />Allow a repeat visit to the same location on this date</label>
-                <p className="text-xs text-muted-foreground sm:col-span-3">All times are Indian Standard Time (IST). Leave times blank to allow the visit any time that day. Several employees can be assigned to the same location on the same date.</p>
+                {/* <label className="flex items-center gap-2 text-sm sm:col-span-3"><Checkbox checked={!!d.allowDuplicate} onCheckedChange={(v) => set("allowDuplicate", !!v)} />Allow a repeat visit to the same location on this date</label> */}
+               <p className="text-xs text-muted-foreground sm:col-span-3">All times are Indian Standard Time (IST). Leave times blank to allow the visit any time that day. Several employees can visit the same location on one date, and the same employee can be assigned more than once; give each visit its own time window so they are easy to tell apart.</p>
               </div>
             )}
             {step === 3 && (

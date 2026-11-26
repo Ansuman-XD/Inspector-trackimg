@@ -64,7 +64,7 @@ function Monitoring() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-muted/50 text-left text-xs text-muted-foreground">
-                <tr>{["Visit ID", "Employee", "Location", "Date", "Window", "Priority", "Status", "GPS", "Distance", "Photo"].map((h) => <th key={h} className="whitespace-nowrap px-4 py-2 font-medium">{h}</th>)}</tr>
+                <tr>{["Visit ID", "Employee", "Location", "Date", "Window", "Priority", "Status", "Check-In", "Check-Out", "GPS", "Distance", "Photo"].map((h) => <th key={h} className="whitespace-nowrap px-4 py-2 font-medium">{h}</th>)}</tr>
               </thead>
               <tbody>
                 {rows.map((t) => (
@@ -78,6 +78,8 @@ function Monitoring() {
                     <td className="whitespace-nowrap px-4 py-2.5 tabular">{fmtWindow(t)}</td>
                     <td className="px-4 py-2.5"><PriorityTag p={t.priority} /></td>
                     <td className="px-4 py-2.5"><StatusBadge status={t.status} /></td>
+                    <td className="whitespace-nowrap px-4 py-2.5 tabular">{fmtTime(t.checkIn?.at)}</td>
+                    <td className="whitespace-nowrap px-4 py-2.5 tabular">{fmtTime(t.checkOut?.at)}</td>
                     <td className="px-4 py-2.5">{t.verificationStatus === "verified" ? <ToneBadge tone="success">Verified</ToneBadge> : t.verificationStatus === "failed" ? <ToneBadge tone="danger">Failed</ToneBadge> : <span className="text-muted-foreground">—</span>}</td>
                     <td className="px-4 py-2.5 tabular">{fmtDistance(t.distanceFromLocation)}</td>
                     <td className="px-4 py-2.5">{t.photo ? <button onClick={(e) => { e.stopPropagation(); drawer.photo(t.id); }} className="inline-flex items-center gap-1 text-primary hover:underline"><ImageIcon className="h-3.5 w-3.5" />View</button> : <span className="text-muted-foreground">—</span>}</td>

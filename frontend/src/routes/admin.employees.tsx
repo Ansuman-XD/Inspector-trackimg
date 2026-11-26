@@ -16,6 +16,7 @@ import {
   Download,
   FileDown,
   Mail,
+  FileSpreadsheet,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,12 +55,13 @@ import {
 import { Avatar, EmptyState, Field, KV, PageHeader, ToneBadge } from "@/components/rt/common";
 import { useDB } from "@/hooks/useDB";
 import { employeeService, type EmployeeInput } from "@/services/employeeService";
-import { exportEmployeesCsv } from "@/services/reportService";
+import { exportEmployeesCsv, exportVisitsCsv } from "@/services/reportService";
 import { taskStats } from "@/services/taskService";
 import { downloadEmployeeWorkHistory } from "@/lib/pdf";
 import { fmtDate, fmtPhone, todayISO } from "@/lib/format";
 import type { Employee } from "@/types";
 import { WhatsAppIcon } from "@/components/rt/WhatsAppIcon";
+
 
 export const Route = createFileRoute("/admin/employees")({
   head: () => ({
@@ -470,6 +472,13 @@ function WorkHistoryDialog({ employee, onClose }: { employee: Employee; onClose:
   const [mode, setMode] = useState<"all" | "range">("all");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
+  const historyTasks = () => {
+  const f = mode === "range" ? from : "";
+  const t = mode === "range" ? to : "";
+  return db.tasks
+    .filter((x) => x.employeeId === employee.id && (!f || x.date >= f) && (!t || x.date <= t))
+    .sort((a, b) => (a.date + a.startTime).localeCompare(b.date + b.startTime));
+};
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-md">
@@ -513,6 +522,17 @@ function WorkHistoryDialog({ employee, onClose }: { employee: Employee; onClose:
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
+          <Button
+  variant="outline"
+  onClick={() => {
+    exportVisitsCsv(db, historyTasks(), `inspector-tracking-work-history-${employee.id.toLowerCase()}.xlsx`);
+    onClose();
+  }}
+  disabled={mode === "range" && (!from || !to)}
+>
+  <FileSpreadsheet className="mr-1.5 h-4 w-4" />
+  Download Excel
+</Button>
           <Button
             onClick={() => {
               downloadEmployeeWorkHistory(
