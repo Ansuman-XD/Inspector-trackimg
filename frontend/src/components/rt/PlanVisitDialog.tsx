@@ -10,6 +10,7 @@ import { taskService, validatePlan, type PlanInput } from "@/services/taskServic
 import { todayISO } from "@/lib/format";
 import { pastCutoff, plannedBeforeCutoff } from "@/lib/visitRules";
 import type { Task } from "@/types";
+import { Loader2 } from "lucide-react";
 
 /** Employee creates or edits a self-planned visit. */
 export function PlanVisitDialog({ employeeId, task, open, onClose, onSaved }: { employeeId: string; task?: Task; open: boolean; onClose: () => void; onSaved?: (id: string) => void }) {
@@ -17,11 +18,38 @@ export function PlanVisitDialog({ employeeId, task, open, onClose, onSaved }: { 
   const [d, setD] = useState<PlanInput>(() => ({ date: task?.date ?? todayISO(), locationId: task?.locationId ?? "", instructions: task?.instructions ?? "" }));
   const [touched, setTouched] = useState(false);
   const err = validatePlan(db, employeeId, d, task?.id);
+  const [saving, setSaving] = useState(false);
   const willArchive = !!task && d.locationId !== task.locationId && pastCutoff(task.date) && plannedBeforeCutoff(task);
 
- async function save() {
+//  async function save() {
+//   setTouched(true);
+//   if (err) return;
+//   try {
+//     if (task) {
+//       await taskService.updatePlan(employeeId, task.id, d);
+//       toast.success(
+//         willArchive
+//           ? "Visit updated. The original plan is kept in history."
+//           : "Visit updated."
+//       );
+//       onSaved?.(task.id);
+//     } else {
+//       const t = await taskService.plan(employeeId, d);
+//       toast.success("Visit planned.");
+//       onSaved?.(t.id);
+//     }
+//     onClose();
+//   } catch (e) {
+//     toast.error((e as Error).message);
+//   }
+// }
+
+async function save() {
   setTouched(true);
   if (err) return;
+  if (saving) return; // ignore double taps
+
+  setSaving(true);
   try {
     if (task) {
       await taskService.updatePlan(employeeId, task.id, d);
@@ -39,6 +67,8 @@ export function PlanVisitDialog({ employeeId, task, open, onClose, onSaved }: { 
     onClose();
   } catch (e) {
     toast.error((e as Error).message);
+  } finally {
+    setSaving(false);
   }
 }
 
@@ -58,7 +88,23 @@ export function PlanVisitDialog({ employeeId, task, open, onClose, onSaved }: { 
           {(touched || (d.locationId && err?.startsWith("This location"))) && err && <p role="alert" className="rounded-md border border-danger/30 bg-danger/8 px-3 py-2 text-sm text-danger">{err}</p>}
           {willArchive && <p className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-sm">It is past 9:00 AM. Changing the location keeps your original plan in history.</p>}
         </div>
-        <DialogFooter><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={save}>{task ? "Save changes" : "Plan visit"}</Button></DialogFooter>
+<DialogFooter>
+  <Button variant="outline" onClick={onClose} disabled={saving}>
+    Cancel
+  </Button>
+  <Button onClick={save} disabled={saving || !!err && touched}>
+    {saving ? (
+      <>
+        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        {task ? "Saving…" : "Planning…"}
+      </>
+    ) : task ? (
+      "Save changes"
+    ) : (
+      "Plan visit"
+    )}
+  </Button>
+</DialogFooter>
       </DialogContent>
     </Dialog>
   );

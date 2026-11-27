@@ -38,8 +38,10 @@ import { taskService } from "@/services/taskService";
 import {
   demoPosition,
   getBestPosition,
+  haversine,
   LOW_ACCURACY_THRESHOLD,
 } from "@/services/verificationService";
+
 import { fmtDate, fmtDateTime, fmtDistance, todayISO, fmtWindow } from "@/lib/format";
 import {
   blockingVisit,
@@ -72,6 +74,7 @@ function VisitFlow() {
   const [camera, setCamera] = useState(false);
   const [edit, setEdit] = useState(false);
   const [del, setDel] = useState(false);
+  
   const [lastFix, setLastFix] = useState<{ lat: number; lng: number; accuracy: number } | null>(
     null,
   );
@@ -190,54 +193,160 @@ function VisitFlow() {
       setBusy(false);
     }
   };
-  const submit = async () => {
-    if (!shot) return;
-    setBusy(true);
-    try {
-      // 1. Try local optimistic update first for immediate response
-      taskService.submitStage(task.id, shot.url, shot.at);
+  
+//   const submit = async () => {
+//   if (!shot) return;
+//   setBusy(true);
+//   try {
+//     // 1. Fresh GPS reading at upload time
+//     const g = db.settings.gpsDemo;
+//     const fix = g.enabled
+//       ? demoPosition(loc.lat, loc.lng, g.mode)
+//       : await getBestPosition({ samples: 5, maxWaitMs: 20000, desiredAccuracyM: 25 });
 
-      // 2. Prepare binary Blob from data URL
-      const res = await fetch(shot.url);
-      const photoBlob = await res.blob();
-      const idempotencyKey = `IDEMP-${task.id}-${stage}-${Date.now().toString(36)}`;
+//     // 2. Must still be inside the radius, otherwise block the upload
+//     const dist = haversine(loc.lat, loc.lng, fix.lat, fix.lng);
+//     if (dist > radius) {
+//       toast.error(
+//         `You are ${fmtDistance(dist)} from the site. Move within ${radius} m and submit again.`,
+//       );
+//       return; // photo stays in `shot`, so they can retry without retaking it
+//     }
+//     setLastFix({ lat: fix.lat, lng: fix.lng, accuracy: fix.accuracy ?? 999 });
 
-      // 3. Queue in IndexedDB offline queue
-      const { offlineQueue } = await import("@/services/offlineQueue");
-      const stageLat = lastFix?.lat ?? task.employeeLatitude ?? loc.lat;
-      const stageLng = lastFix?.lng ?? task.employeeLongitude ?? loc.lng;
-      const stageAcc = lastFix?.accuracy ?? task.gpsAccuracy ?? 10;
+//     // 3. Build the offline-queue item using the FRESH position
+//     const res = await fetch(shot.url);
+//     const photoBlob = await res.blob();
+//     const idempotencyKey = `IDEMP-${task.id}-${stage}-${Date.now().toString(36)}`;
+//     const { offlineQueue } = await import("@/services/offlineQueue");
 
-      await offlineQueue.queueSubmission({
-        id: idempotencyKey,
-        taskId: task.id,
-        type: stage === "checkin" ? "check_in" : "check_out",
-        lat: stageLat,
-        lng: stageLng,
-        accuracy: stageAcc,
-        deviceTime: shot.at,
-        photoBlob,
-        status: "queued",
-        createdAt: Date.now(),
-      });
+//     await offlineQueue.queueSubmission({
+//       id: idempotencyKey,
+//       taskId: task.id,
+//       type: stage === "checkin" ? "check_in" : "check_out",
+//       lat: fix.lat,
+//       lng: fix.lng,
+//       accuracy: fix.accuracy ?? 999,
+//       deviceTime: shot.at,
+//       photoBlob,
+//       status: "queued",
+//       createdAt: Date.now(),
+//     });
 
-      if (navigator.onLine) {
-        // Trigger background sync immediately to push stage to PostgreSQL
-        await offlineQueue.syncAll();
-      }
+//     // 4. Online: wait for the server's answer BEFORE marking success locally
+//     if (navigator.onLine) {
+//       const r = await offlineQueue.syncAll();
+//       if (r.failed > 0) {
+//         await offlineQueue.remove(idempotencyKey); // don't retry a rejected stage forever
+//         return; // syncAll already showed the server's error toast
+//       }
+//     }
 
-      toast.success(
-        stage === "checkin"
-          ? "Checked in. Remember to check out before leaving."
-          : "Checked out. Visit completed.",
+//     // 5. Accepted (or saved offline): update local state
+//     taskService.submitStage(task.id, shot.url, shot.at);
+//     toast.success(
+//       stage === "checkin"
+//         ? "Checked in. Remember to check out before leaving."
+//         : "Checked out. Visit completed.",
+//     );
+//     setShot(null);
+//   } catch (e) {
+//     toast.error((e as Error).message);
+//   } finally {
+//     setBusy(false);
+//   }
+// };
+
+const submit = async () => {
+  if (!shot) return;
+  setBusy(true);
+  setGpsErr("");
+  try {
+    // 1. Fresh GPS at the moment of image upload
+    const g = db.settings.gpsDemo;
+    const fix = g.enabled
+      ? ((await new Promise((r) => setTimeout(r, 800)), demoPosition(loc.lat, loc.lng, g.mode)))
+      : await getBestPosition({
+          samples: 3,
+          maxWaitMs: 15000,
+          desiredAccuracyM: 25,
+        });
+
+    setLastFix({
+      lat: fix.lat,
+      lng: fix.lng,
+      accuracy: fix.accuracy ?? 999,
+    });
+
+    // 2. Must still be inside radius at submit time
+    const distance = Math.round(
+      // use haversine from verificationService — already imported via getBestPosition path
+      // or import { haversine } from "@/services/verificationService"
+      (await import("@/services/verificationService")).haversine(
+        loc.lat,
+        loc.lng,
+        fix.lat,
+        fix.lng,
+      ),
+    );
+
+    if (distance > radius) {
+      // Revert local status so they must verify again
+      taskService.recordGps(task.id, fix); // will set verification_failed if outside
+      toast.error(
+        `You left the site. You are ${fmtDistance(distance)} away. Move within ${radius} m and verify again.`,
       );
-      setShot(null);
-    } catch (e) {
-      toast.error((e as Error).message);
-    } finally {
-      setBusy(false);
+      setShot(null); // force new photo after re-verify
+      return;
     }
-  };
+
+    // Optional: warn on poor accuracy
+    if (!g.enabled && fix.accuracy != null && fix.accuracy > LOW_ACCURACY_THRESHOLD) {
+      toast.message(`GPS accuracy is ±${fix.accuracy} m. Stand outdoors if this fails.`);
+    }
+
+    // 3. Update task with this fresh (in-radius) fix so submitStage uses correct coords
+    taskService.recordGps(task.id, fix);
+
+    // 4. Local optimistic submit
+    taskService.submitStage(task.id, shot.url, shot.at);
+
+    // 5. Prepare photo + queue with FRESH coords
+    const res = await fetch(shot.url);
+    const photoBlob = await res.blob();
+    const idempotencyKey = `IDEMP-${task.id}-${stage}-${Date.now().toString(36)}`;
+
+    const { offlineQueue } = await import("@/services/offlineQueue");
+    await offlineQueue.queueSubmission({
+      id: idempotencyKey,
+      taskId: task.id,
+      type: stage === "checkin" ? "check_in" : "check_out",
+      lat: fix.lat,           // fresh
+      lng: fix.lng,           // fresh
+      accuracy: fix.accuracy ?? 10,
+      deviceTime: shot.at,
+      photoBlob,
+      status: "queued",
+      createdAt: Date.now(),
+    });
+
+    if (navigator.onLine) {
+      await offlineQueue.syncAll();
+    }
+
+    toast.success(
+      stage === "checkin"
+        ? "Checked in. Remember to check out before leaving."
+        : "Checked out. Visit completed.",
+    );
+    setShot(null);
+  } catch (e) {
+    setGpsErr((e as Error).message);
+    toast.error((e as Error).message);
+  } finally {
+    setBusy(false);
+  }
+};
   const remove = async () => {
     try {
       const r = await taskService.deleteByEmployee(session.userId, task.id);
@@ -488,9 +597,9 @@ function VisitFlow() {
                   Retake
                 </Button>
                 <Button className="h-12" onClick={submit} disabled={busy}>
-                  <Send className="mr-1.5 h-4 w-4" />
-                  Submit {stageLabel}
-                </Button>
+  {busy ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Send className="mr-1.5 h-4 w-4" />}
+  {busy ? "Checking location…" : `Submit ${stageLabel}`}
+</Button>
               </div>
             </>
           ) : camera ? (
