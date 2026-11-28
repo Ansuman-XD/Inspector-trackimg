@@ -178,22 +178,35 @@ taskRoutes.post("/:id/record-gps", async (c) => {
 
 
 // DELETE /tasks/:id (Employee or Admin deletes visit)
-taskRoutes.delete("/:id", async (c) => {
+// taskRoutes.delete("/:id", async (c) => {
+//   const user = c.get("user");
+//   const id = c.req.param("id");
+
+//   try {
+//     if (user.role === "admin") {
+//       await taskService.deleteByAdmin(id, user.userId);
+//       return c.json({ success: true, message: "Visit deleted by Admin." });
+//     } else {
+//       const result = await taskService.deleteByEmployee(user.userId, id);
+//       return c.json({
+//         success: true,
+//         action: result,
+//         message: result === "archived" ? "Visit cancelled and archived to history." : "Visit deleted.",
+//       });
+//     }
+//   } catch (err: any) {
+//     if (err instanceof ServiceError) return c.json({ error: err.message }, err.status as any);
+//     return c.json({ error: "Internal server error" }, 500);
+//   }
+// });
+// DELETE /tasks/:id (Admin only)
+taskRoutes.delete("/:id", requireAdmin, async (c) => {
   const user = c.get("user");
   const id = c.req.param("id");
 
   try {
-    if (user.role === "admin") {
-      await taskService.deleteByAdmin(id, user.userId);
-      return c.json({ success: true, message: "Visit deleted by Admin." });
-    } else {
-      const result = await taskService.deleteByEmployee(user.userId, id);
-      return c.json({
-        success: true,
-        action: result,
-        message: result === "archived" ? "Visit cancelled and archived to history." : "Visit deleted.",
-      });
-    }
+    await taskService.deleteByAdmin(id, user.userId);
+    return c.json({ success: true, message: "Visit deleted by Admin." });
   } catch (err: any) {
     if (err instanceof ServiceError) return c.json({ error: err.message }, err.status as any);
     return c.json({ error: "Internal server error" }, 500);
