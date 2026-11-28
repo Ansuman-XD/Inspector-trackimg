@@ -343,28 +343,28 @@ export const taskService = {
   },
 
   /** Employee delete — only their own self-planned visits that have not started. */
-  async deleteByEmployee(employeeId: string, id: string): Promise<"deleted" | "archived"> {
-    const db = storage.get();
-    const t = db.tasks.find((x) => x.id === id);
-    if (!t || t.employeeId !== employeeId) throw new Error("Visit record not found.");
-    if (!isSelfPlanned(t)) throw new Error("Assigned by Admin — only Admin can delete this visit.");
-    if (t.checkIn || !["assigned", "pending"].includes(t.status)) throw new Error("This visit has already started and cannot be deleted.");
+  // async deleteByEmployee(employeeId: string, id: string): Promise<"deleted" | "archived"> {
+  //   const db = storage.get();
+  //   const t = db.tasks.find((x) => x.id === id);
+  //   if (!t || t.employeeId !== employeeId) throw new Error("Visit record not found.");
+  //   if (!isSelfPlanned(t)) throw new Error("Assigned by Admin — only Admin can delete this visit.");
+  //   if (t.checkIn || !["assigned", "pending"].includes(t.status)) throw new Error("This visit has already started and cannot be deleted.");
 
-    // Call backend API
-    const res = await apiClient<any>(`/tasks/${id}`, {
-      method: "DELETE",
-    });
+  //   // Call backend API
+  //   const res = await apiClient<any>(`/tasks/${id}`, {
+  //     method: "DELETE",
+  //   });
 
-    const keep = res?.action === "archived" || pastCutoff(t.date);
-    const { emp, loc } = names(db, t);
-    storage.update((d) => ({
-      ...d,
-      tasks: d.tasks.filter((x) => x.id !== id),
-      taskHistory: keep ? archive(d, t, "cancelled", employeeId, "Cancelled by employee after 9:00 AM.") : d.taskHistory,
-      activities: makeActivity(d, { kind: "warning", actor: employeeId, message: `${emp} cancelled the planned visit to ${loc}${keep ? " (kept in history)" : ""}.` }),
-    }));
-    return keep ? "archived" : "deleted";
-  },
+  //   const keep = res?.action === "archived" || pastCutoff(t.date);
+  //   const { emp, loc } = names(db, t);
+  //   storage.update((d) => ({
+  //     ...d,
+  //     tasks: d.tasks.filter((x) => x.id !== id),
+  //     taskHistory: keep ? archive(d, t, "cancelled", employeeId, "Cancelled by employee after 9:00 AM.") : d.taskHistory,
+  //     activities: makeActivity(d, { kind: "warning", actor: employeeId, message: `${emp} cancelled the planned visit to ${loc}${keep ? " (kept in history)" : ""}.` }),
+  //   }));
+  //   return keep ? "archived" : "deleted";
+  // },
 
   /** Admin can delete any visit. */
   async remove(id: string) {

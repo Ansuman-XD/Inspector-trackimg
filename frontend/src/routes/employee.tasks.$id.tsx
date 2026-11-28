@@ -73,7 +73,7 @@ function VisitFlow() {
   const [shot, setShot] = useState<{ url: string; at: string } | null>(null);
   const [camera, setCamera] = useState(false);
   const [edit, setEdit] = useState(false);
-  const [del, setDel] = useState(false);
+  // const [del, setDel] = useState(false);
   
   const [lastFix, setLastFix] = useState<{ lat: number; lng: number; accuracy: number } | null>(
     null,
@@ -347,15 +347,15 @@ const submit = async () => {
     setBusy(false);
   }
 };
-  const remove = async () => {
-    try {
-      const r = await taskService.deleteByEmployee(session.userId, task.id);
-      toast.success(r === "archived" ? "Visit cancelled and kept in history." : "Visit deleted.");
-      navigate({ to: "/employee/tasks" });
-    } catch (e) {
-      toast.error((e as Error).message);
-    }
-  };
+  // const remove = async () => {
+  //   try {
+  //     const r = await taskService.deleteByEmployee(session.userId, task.id);
+  //     toast.success(r === "archived" ? "Visit cancelled and kept in history." : "Visit deleted.");
+  //     navigate({ to: "/employee/tasks" });
+  //   } catch (e) {
+  //     toast.error((e as Error).message);
+  //   }
+  // };
 
   const markers = [
     {
@@ -422,23 +422,19 @@ const submit = async () => {
           Open directions
         </a>
         {notStarted &&
-          (self ? (
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              <Button variant="outline" className="h-11" onClick={() => setEdit(true)}>
-                <Pencil className="mr-1.5 h-4 w-4" />
-                Edit
-              </Button>
-              <Button variant="outline" className="h-11 text-danger" onClick={() => setDel(true)}>
-                <Trash2 className="mr-1.5 h-4 w-4" />
-                Delete
-              </Button>
-            </div>
-          ) : (
-            <p className="mt-3 inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs text-muted-foreground">
-              <Lock className="h-3.5 w-3.5" />
-              Assigned by Admin — only Admin can delete this visit.
-            </p>
-          ))}
+  (self ? (
+    <div className="mt-3">
+      <Button variant="outline" className="h-11 w-full" onClick={() => setEdit(true)}>
+        <Pencil className="mr-1.5 h-4 w-4" />
+        Edit
+      </Button>
+    </div>
+  ) : (
+    <p className="mt-3 inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs text-muted-foreground">
+      <Lock className="h-3.5 w-3.5" />
+      Assigned by Admin, only Admin can change or delete this visit.
+    </p>
+  ))}
       </div>
 
       <MapView
@@ -629,22 +625,7 @@ const submit = async () => {
           }
         />
       )}
-      <AlertDialog open={del} onOpenChange={setDel}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete this planned visit?</AlertDialogTitle>
-            <AlertDialogDescription>
-              {pastCutoff(task.date)
-                ? "It is past 9:00 AM today, so this visit will be marked as cancelled and kept in history."
-                : "This visit will be removed."}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Keep</AlertDialogCancel>
-            <AlertDialogAction onClick={remove}>Delete</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      
     </div>
   );
 }

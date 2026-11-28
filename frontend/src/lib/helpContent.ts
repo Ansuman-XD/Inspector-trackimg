@@ -76,8 +76,7 @@ export const EMPLOYEE_HELP: HelpSection[] = [
     items: [
       { q: "How do I plan my own visit?", a: "Tasks → Plan a Visit. Choose a date and an active location, add optional notes, and save." },
       { q: "Can I plan a location another inspector is visiting?", a: "Yes. Several inspectors can visit the same site on the same day. You just can't book the same location twice yourself on one date." },
-      { q: "Can I edit or delete a planned visit?", a: "Yes, but only your own self-planned visits that have not started. Open the visit and tap Edit or Delete. Visits assigned by Admin can only be deleted by Admin." },
-    //   { q: "What is the 9:00 AM rule?", a: "After 9:00 AM (IST) on the visit day, deleting a plan marks it Cancelled and keeps it in history. Changing the location keeps your original plan in history." },
+      { q: "Can I edit a planned visit?", a: "Yes, but only your own self-planned visits that have not started. Open the visit and tap Edit. Employees cannot delete visits; only Admin can delete a visit." },    //   { q: "What is the 9:00 AM rule?", a: "After 9:00 AM (IST) on the visit day, deleting a plan marks it Cancelled and keeps it in history. Changing the location keeps your original plan in history." },
     ],
   },
   {

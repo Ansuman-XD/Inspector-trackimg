@@ -95,7 +95,6 @@ export const taskService = {
     //   }
     // }
 
-
     // Duplicate check for same employee unless allowed
     // if (!input.allowDuplicate) {
     //   const dup = await taskRepository.findDuplicateTask(
@@ -142,50 +141,50 @@ export const taskService = {
 
   // 2. Employee Self-Planning
   // async plan(employeeId: string, input: PlanTaskInput): Promise<TaskRecord> {
-    // if (!input.date) throw new ServiceError("Select a visit date.", 400);
-    // const today = todayIST();
-    // if (input.date < today)
-    //   throw new ServiceError("Visit date cannot be in the past.", 400);
+  // if (!input.date) throw new ServiceError("Select a visit date.", 400);
+  // const today = todayIST();
+  // if (input.date < today)
+  //   throw new ServiceError("Visit date cannot be in the past.", 400);
 
-    // if (!input.locationId) throw new ServiceError("Select a location.", 400);
-    // const loc = await locationRepository.findById(input.locationId);
-    // if (!loc || loc.status !== "active")
-    //   throw new ServiceError("Selected location is not available.", 400);
+  // if (!input.locationId) throw new ServiceError("Select a location.", 400);
+  // const loc = await locationRepository.findById(input.locationId);
+  // if (!loc || loc.status !== "active")
+  //   throw new ServiceError("Selected location is not available.", 400);
 
-    // // Rule 6: Location Conflict check
-    // // Rule 6: Location Conflict check (Only 1 active visit per location per date in database)
-    // const conflict = await taskRepository.findConflictingTask(
-    //   input.locationId,
-    //   input.date,
-    // );
-    // if (conflict) {
-    //   if (conflict.employeeId !== employeeId) {
-    //     throw new ServiceError(
-    //       `This location is already scheduled for ${conflict.employeeName} (${conflict.employeeId}) on ${input.date}. Please select another date or location.`,
-    //       409,
-    //     );
-    //   } else {
-    //     throw new ServiceError(
-    //       "You already have an active visit scheduled for this location on that date.",
-    //       409,
-    //     );
-    //   }
-    // }
+  // // Rule 6: Location Conflict check
+  // // Rule 6: Location Conflict check (Only 1 active visit per location per date in database)
+  // const conflict = await taskRepository.findConflictingTask(
+  //   input.locationId,
+  //   input.date,
+  // );
+  // if (conflict) {
+  //   if (conflict.employeeId !== employeeId) {
+  //     throw new ServiceError(
+  //       `This location is already scheduled for ${conflict.employeeName} (${conflict.employeeId}) on ${input.date}. Please select another date or location.`,
+  //       409,
+  //     );
+  //   } else {
+  //     throw new ServiceError(
+  //       "You already have an active visit scheduled for this location on that date.",
+  //       409,
+  //     );
+  //   }
+  // }
 
-    // Self-duplicate check
-    // const dup = await taskRepository.findDuplicateTask(
-    //   employeeId,
-    //   input.locationId,
-    //   input.date,
-    // );
-    // if (dup) {
-    //   throw new ServiceError(
-    //     "You already have a visit to this location on that date.",
-    //     409,
-    //   );
-    // }
+  // Self-duplicate check
+  // const dup = await taskRepository.findDuplicateTask(
+  //   employeeId,
+  //   input.locationId,
+  //   input.date,
+  // );
+  // if (dup) {
+  //   throw new ServiceError(
+  //     "You already have a visit to this location on that date.",
+  //     409,
+  //   );
+  // }
 
-      // 2. Employee Self-Planning
+  // 2. Employee Self-Planning
   async plan(employeeId: string, input: PlanTaskInput): Promise<TaskRecord> {
     if (!input.date) throw new ServiceError("Select a visit date.", 400);
     const today = todayIST();
@@ -283,18 +282,18 @@ export const taskService = {
 
     // const locChanged = input.locationId !== task.locationId;
     const loc = await locationRepository.findById(input.locationId);
-if (!loc || loc.status !== "active") {
-  throw new ServiceError("Selected location is not available.", 400);
-}
+    if (!loc || loc.status !== "active") {
+      throw new ServiceError("Selected location is not available.", 400);
+    }
 
-// Another employee at this location is now allowed.
-// Only block if THIS employee already has another visit there on that date.
-// const dup = await taskRepository.findDuplicateTask(employeeId, input.locationId, input.date, id);
-// if (dup) {
-//   throw new ServiceError("You already have a visit to this location on that date.", 409);
-// }
+    // Another employee at this location is now allowed.
+    // Only block if THIS employee already has another visit there on that date.
+    // const dup = await taskRepository.findDuplicateTask(employeeId, input.locationId, input.date, id);
+    // if (dup) {
+    //   throw new ServiceError("You already have a visit to this location on that date.", 409);
+    // }
 
-const locChanged = input.locationId !== task.locationId;
+    const locChanged = input.locationId !== task.locationId;
 
     const keepHistory =
       locChanged &&
@@ -330,48 +329,48 @@ const locChanged = input.locationId !== task.locationId;
   },
 
   // 4. Employee Delete Self-Planned Visit (Rule 4: 9:00 AM IST cutoff)
-  async deleteByEmployee(
-    employeeId: string,
-    id: string,
-  ): Promise<"deleted" | "archived"> {
-    const task = await taskRepository.findById(id);
-    if (!task || task.employeeId !== employeeId) {
-      throw new ServiceError("Visit record not found.", 404);
-    }
+  // async deleteByEmployee(
+  //   employeeId: string,
+  //   id: string,
+  // ): Promise<"deleted" | "archived"> {
+  //   const task = await taskRepository.findById(id);
+  //   if (!task || task.employeeId !== employeeId) {
+  //     throw new ServiceError("Visit record not found.", 404);
+  //   }
 
-    if (task.source !== "self" || task.createdBy !== employeeId) {
-      throw new ServiceError(
-        "Assigned by Admin — only Admin can delete this visit.",
-        403,
-      );
-    }
+  //   if (task.source !== "self" || task.createdBy !== employeeId) {
+  //     throw new ServiceError(
+  //       "Assigned by Admin — only Admin can delete this visit.",
+  //       403,
+  //     );
+  //   }
 
-    if (!["assigned", "pending"].includes(task.status)) {
-      throw new ServiceError(
-        "This visit has already started and cannot be deleted.",
-        400,
-      );
-    }
+  //   if (!["assigned", "pending"].includes(task.status)) {
+  //     throw new ServiceError(
+  //       "This visit has already started and cannot be deleted.",
+  //       400,
+  //     );
+  //   }
 
-    const pastCutoff = isPastCutoff(task.scheduledDate);
-    if (pastCutoff) {
-      // Archive as 'cancelled'
-      await taskRepository.update(id, { status: "cancelled" });
-      await taskRepository.createHistory({
-        id: `HST-${crypto.randomUUID()}`,
-        taskId: id,
-        kind: "cancelled",
-        by: employeeId,
-        note: "Cancelled by employee after 9:00 AM.",
-        before: task,
-      });
-      return "archived";
-    }
+  //   const pastCutoff = isPastCutoff(task.scheduledDate);
+  //   if (pastCutoff) {
+  //     // Archive as 'cancelled'
+  //     await taskRepository.update(id, { status: "cancelled" });
+  //     await taskRepository.createHistory({
+  //       id: `HST-${crypto.randomUUID()}`,
+  //       taskId: id,
+  //       kind: "cancelled",
+  //       by: employeeId,
+  //       note: "Cancelled by employee after 9:00 AM.",
+  //       before: task,
+  //     });
+  //     return "archived";
+  //   }
 
-    // Before cutoff: hard delete
-    await taskRepository.delete(id);
-    return "deleted";
-  },
+  //   // Before cutoff: hard delete
+  //   await taskRepository.delete(id);
+  //   return "deleted";
+  // },
 
   // 5. Admin Delete Visit
   async deleteByAdmin(id: string, adminId: string): Promise<void> {
